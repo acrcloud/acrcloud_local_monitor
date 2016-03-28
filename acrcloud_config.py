@@ -6,21 +6,19 @@ config = {
         "reborn_Time_Sec":20,
     },
     "user":{
-        "access_key":"48ba195edd0107061f2062f0cd2bf5a3",
-        "access_secret":"KxTGNBiZOM0nS2TmY22ApFjsHeYGjnVyYm9Bh5Uc",
+        "access_key":"",
+        "access_secret":"",
         "api_url":"https://api.acrcloud.com/v1/local-monitor-streams?access_key={0}",
     },
     "recognize":{
-        "host":"ap-southeast-1.api.acrcloud.com",
-        "query_type":"fingerprint",
         "init_nums":{'4core':50, '8core':100, '16core':150, '32core':200},
     },
     "database":{
-        "host":"127.0.0.1",
+        "host":"",
         "port":3306,
-        "user":"root",
-        "passwd":"monitora1b2c3d4!",
-        "db":"monitor_log",
+        "user":"",
+        "passwd":"",
+        "db":"",
     },
     "log":{
         "dir":"./radioLog",
