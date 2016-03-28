@@ -14,11 +14,11 @@ config = {
         "init_nums":{'4core':50, '8core':100, '16core':150, '32core':200},
     },
     "database":{
-        "host":"",
+        "host":"127.0.0.1",
         "port":3306,
-        "user":"",
+        "user":"root",
         "passwd":"",
-        "db":"",
+        "db":"monitor_result",
     },
     "log":{
         "dir":"./radioLog",
