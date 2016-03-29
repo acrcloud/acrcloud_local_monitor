@@ -36,7 +36,6 @@ class Acrcloud_Rec_Worker(threading.Thread):
         self._recQueue = recQueue
         self._resultQueue = resultQueue
         self._dlogger = dlog
-        self._dlogger.info('MSG@Acrcloud_Rec_Worker({0}).Init_Success'.format(self._worker_num))
 
     def callback_fun(self, result):
         try:
@@ -152,6 +151,7 @@ class Acrcloud_Rec_Manager:
                 rechandler.start()
                 self._workerpool.append((self._worker_num, rechandler))
                 self._worker_num += 1
+            self._dlog.logger.info('MSG@Acrcloud_Rec_Worker(Num:{0}).Init_Success'.format(new_nums))
         except Exception as e:
             self._dlog.logger.error('Error@Init_Rec_Workers', exc_info=True)
             self.exitRecM('rec_error#3#init_rec_workers_error')
