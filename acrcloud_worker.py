@@ -451,7 +451,7 @@ class AcrcloudWorker:
             recv_thread = ''
             if self.invalid_url_flag:
                 invalidpassTime = (datetime.datetime.now() - self.invalid_url_time).seconds
-                if invalidpassTime % 30*60 == 0:
+                if invalidpassTime % (10*60) == 0:
                     self._dlog.logger.warn("Invalid URL Worker Restart Time: {0}s/{1}s".format(invalidpassTime,
                                                                                               self.invalid_url_rebornTime))
                 if invalidpassTime >= self.invalid_url_rebornTime:
