@@ -12,7 +12,7 @@ import urllib2
 import datetime
 import mimetools
 import traceback
-import acrcloud_extr
+import acrcloud_stream_decode
 
 class acrcloud_recognize:
 
@@ -63,7 +63,7 @@ class acrcloud_recognize:
         return None, None
 
     def gen_fp(self, buf, rate=0):
-        return acrcloud_extr.create_fingerprint(buf, (rate, -1*rate))
+        return acrcloud_stream_decode.create_fingerprint(buf, False)
 
     def do_recogize(self, host, query_data, query_type, access_key, access_secret, timeout=5):
         http_method = "POST"
@@ -92,51 +92,7 @@ class acrcloud_recognize:
             res = ''
             pcm_buf = self.gen_fp(wav_buf, self.rate)
             res = self.do_recogize(host, pcm_buf, query_type, access_key, access_secret, timeout)
-            if isCheck:
-                self.check(res, wav_buf)
         except Exception as e:
             self.dlog.logger.error('recognize error', exc_info=True)
         return res
         
-    def check(self, res, wav_buf):
-        try:
-            j_res = json.loads(res)
-            if 'response' in j_res and j_res['response']['status']['code'] == 0:
-                self.noResult_count = 0
-            elif 'status' in j_res and j_res['status']['code'] == 0:
-                self.noResult_count = 0
-            else:
-                self.noResult_count += 1
-            if self.noResult_count in [2, 5, 9, 15] or (self.noResult_count > 15 and self.noResult_count % 10 == 0):
-                self.tran_rate(wav_buf)
-        except Exception as e:
-            self.dlog.logger.error('recognize check error:', exc_info=True)
-        
-    def tran_rate(self, buf):
-        self.dlog.logger.warn('tran_rate...')
-        wav_buf = buf[:80000]
-        retry_list = [0]
-        for i in range(1, 31, 3):
-            retry_list.append(i*0.1)
-            retry_list.append(i*-0.1)
-            
-        for i in retry_list:
-            try:
-                pcm_buf = self.gen_fp(wav_buf, i)
-                res = self.do_recogize(self.host, pcm_buf, self.query_type, self.access_key, self.access_secret, self.timeout)
-                if res:
-                    j_res = json.loads(res)
-                    if 'response' in j_res and j_res['response']['status']['code'] == 0:
-                        self.rate = i
-                        self.noResult_count = 0
-                        self.dlog.logger.warn('recognize@Change Rate Success: {0}'.format(self.rate))
-                        break
-                    elif 'status' in j_res and j_res['status']['code'] == 0:
-                        self.rate = i
-                        self.noResult_count = 0
-                        self.dlog.logger.warn('recognize@Change Rate Success: {0}'.format(self.rate))
-                        break
-            except Exception as e:
-                self.dlog.logger.error('recognize tran_rate error:', exc_info=True)
-                break
-            

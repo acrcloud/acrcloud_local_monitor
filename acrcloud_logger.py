@@ -7,15 +7,6 @@ import time
 import logging
 import traceback
 from logging.handlers import TimedRotatingFileHandler
-'''
-traceback records log
-try:
-    pass
-except Exception, e:
-    logger.error('Failed to open file', exc_info=True)
-'''
-
-import logging
 
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
 

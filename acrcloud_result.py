@@ -519,7 +519,7 @@ class Backup:
         db_config = self._config["database"]
         self._redis_map = {}
         self.dlog = dlog
-        self._mdb = MySQLMgr(host=db_config["host"],
+        self._mdb = MysqlManager(host=db_config["host"],
                              port=db_config["port"],
                              user=db_config["user"],
                              passwd=db_config["passwd"],
@@ -702,7 +702,7 @@ class Backup:
         return ret
 
 
-class MySQLMgr:
+class MysqlManager:
     def __init__(self, host, port, user, passwd, dbname):
         self.host = host
         self.port = port

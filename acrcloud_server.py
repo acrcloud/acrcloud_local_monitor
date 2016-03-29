@@ -8,13 +8,14 @@
 #
 
 import sys
+import traceback
+from acrcloud_config import config
+from twisted.internet import reactor
+from acrcloud_manager import acrcloudManager
+from twisted.internet.protocol import Protocol, ServerFactory
+
 reload(sys)
 sys.setdefaultencoding("utf8")
-import traceback
-from twisted.internet import reactor
-from acrcloud_mana import acrcloudMana
-from acrcloud_config import config
-from twisted.internet.protocol import Protocol, ServerFactory
 
 import platform
 _platform = platform.system().lower()

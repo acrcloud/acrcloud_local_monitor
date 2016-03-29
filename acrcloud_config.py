@@ -6,8 +6,8 @@ config = {
         "reborn_Time_Sec":20,
     },
     "user":{
-        "access_key":"",
-        "access_secret":"",
+        "access_key":"48ba195edd0107061f2062f0cd2bf5a3",
+        "access_secret":"KxTGNBiZOM0nS2TmY22ApFjsHeYGjnVyYm9Bh5Uc",
         "api_url":"https://api.acrcloud.com/v1/local-monitor-streams?access_key={0}",
     },
     "recognize":{

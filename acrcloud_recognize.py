@@ -19,7 +19,7 @@ import threading
 import logging
 import multiprocessing
 
-from recognizer import acrcloud_recognize
+from tools_language import acrcloud_recognize
 from acrcloud_logger import AcrcloudLogger
 
 reload(sys)

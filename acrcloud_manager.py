@@ -18,10 +18,9 @@ import urllib2
 import logging
 import traceback
 import multiprocessing
-from random import choice
 
 from acrcloud_worker import AcrcloudWorker
-from acrcloud_rec import Acrcloud_Rec_Manager
+from acrcloud_recognize import Acrcloud_Rec_Manager
 from acrcloud_logger import AcrcloudLogger
 from acrcloud_result import Acrcloud_Result
 from acrcloud_config import config
@@ -29,16 +28,7 @@ from acrcloud_config import config
 reload(sys)
 sys.setdefaultencoding("utf8")
 
-USER_AGENTS = [
-    'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
-    'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.0.12) Gecko/20070731 Ubuntu/dapper-security Firefox/1.5.0.12',
-    'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6',
-    'Mozilla/5.0 (Macintosh; U; Intel Mac OS X; en) AppleWebKit/419 (KHTML, like Gecko) Safari/419.3',
-    'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.83 Safari/537.1',
-    'Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1'
-]
-
-class AcrcloudMana:
+class AcrcloudManager:
     def __init__ (self, springboard):
         self.monitor = springboard
         self.sockNum = 0
@@ -189,7 +179,7 @@ class AcrcloudSpringboard:
         response = ''
         for i in range(2):
             request = urllib2.Request(url)
-            request.add_header("User-Agent", choice(USER_AGENTS))
+            request.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1")
             if referer:
                 request.add_header("Referer", referer)
             try:
@@ -208,11 +198,6 @@ class AcrcloudSpringboard:
         try:
             url = api_url.format(access_key)
             datainfo = self.getPage(url)
-            print "~"*40
-            print datainfo
-            print "~"*40
-            #with open('streams.lst', 'rb') as rfile:
-            #    datainfo = rfile.read()
             streaminfo = json.loads(datainfo)
             return json.dumps(streaminfo)
         except Exception as e:
@@ -596,5 +581,5 @@ def ResWorker(resultqueue, config):
     sWorker = Acrcloud_Result(resultqueue, config)
     sWorker.start()
     
-acrcloudMana = AcrcloudMana(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker))
+acrcloudMana = AcrcloudManager(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker))
     

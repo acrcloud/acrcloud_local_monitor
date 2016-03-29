@@ -22,7 +22,6 @@ import datetime
 import traceback
 import threading
 import subprocess
-from random import choice
 from xml.dom import minidom
 try:
     from bs4 import BeautifulSoup
@@ -34,16 +33,6 @@ from acrcloud_logger import AcrcloudLogger
 
 reload(sys)
 sys.setdefaultencoding("utf8")
-
-USER_AGENTS = [
-    'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
-    'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.0.12) Gecko/20070731 Ubuntu/dapper-security Firefox/1.5.0.12',
-    'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6',
-    'Mozilla/5.0 (Macintosh; U; Intel Mac OS X; en) AppleWebKit/419 (KHTML, like Gecko) Safari/419.3',
-    'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.83 Safari/537.1',
-    'Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1'
-]
-
 
 class Worker_CollectData(threading.Thread):
 
@@ -119,59 +108,6 @@ class Worker_DownloadStream(threading.Thread):
         self.checkURL()
         self._Runing = True
         self.setDaemon(True)
-        if self._isFirst:
-            #self.is_valid()
-            pass
-
-    def is_valid(self):
-        ret = self.is_video()
-        if ret == 1:
-            self._cmdQueue.put("ISVIDEO#1#video")
-        elif ret == 0:
-            self._cmdQueue.put("ISVIDEO#0#audio")
-        elif ret == -1:
-            self._cmdQueue.put("BAD_URL")
-            self._dlogger.warn('MSG@Worker_DownloadStream.send "DAD_URL"')
-            self._Runing = False
-        
-    def timeout_command(self, command, timeout):
-        start = datetime.datetime.now()
-        iproc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        while iproc.poll() is None:
-            time.sleep(1)
-            now = datetime.datetime.now()
-            if (now - start).seconds > timeout:
-                iproc.terminate()
-                iproc.kill()
-                return None
-        return iproc.stdout.read()
-        
-    def is_video(self):
-        # return 0(audio), 1(video), -1(none)
-        try:
-            ret = -1
-            strCmd =  "./ffprobe -v quiet -print_format json -show_format -show_streams -i {0}".format(self.stream_url)
-            for i in range(5):
-                info = self.timeout_command(strCmd.split(" "), self.is_video_timeout)
-                if not info:
-                    continue
-                jsoninfo = json.loads(info)
-                streams = jsoninfo.get('streams',[])
-                if not streams:
-                    time.sleep(1)
-                    continue
-                for item in streams:
-                    codec_type = item.get('codec_type')
-                    if codec_type == 'video':
-                        ret = 1
-                        break
-                    elif codec_type == 'audio':
-                        ret = 0
-                if ret >= 0:
-                    return ret
-        except Exception as e:
-            self._dlogger.error('Error@Worker_DownloadStream.is_video', exc_info=True)
-        return ret
         
     def parsePLS(self, url):
         plslist = []
@@ -264,7 +200,7 @@ class Worker_DownloadStream(threading.Thread):
         response = ''
         for i in range(2):
             request = urllib2.Request(url)
-            request.add_header("User-Agent", choice(USER_AGENTS))
+            request.add_header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1")
             if referer:
                 request.add_header("Referer", referer)
             try:
@@ -394,9 +330,6 @@ class AcrcloudWorker:
             self.deadThreshold = self._config["server"]["dead_Threshold"]
             self.isFirst = True
             
-            ########################
-            ## download function  ##
-            ########################
             if self._monitor_timeout <= self._monitor_interval + self._monitor_length:
                 self._monitor_timeout = self._monitor_interval + self._monitor_length + 2
             self._downloadFun = acrcloud_download
