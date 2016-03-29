@@ -11,7 +11,7 @@ import sys
 import traceback
 from acrcloud_config import config
 from twisted.internet import reactor
-from acrcloud_manager import acrcloudManager
+from acrcloud_manager import AcrcloudManager
 from twisted.internet.protocol import Protocol, ServerFactory
 
 reload(sys)
