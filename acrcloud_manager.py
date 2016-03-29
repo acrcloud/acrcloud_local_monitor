@@ -121,7 +121,8 @@ class AcrcloudSpringboard:
         self.access_key = self.config['user']['access_key']
         self.access_secret = self.config['user']['access_secret']
         self.api_url = self.config['user']['api_url']
-        self.addkeys = self.config["addkeys"]
+        self.addkeys =['access_key','access_secret','rec_host','stream_id','stream_url',
+                       'interval','monitor_length','monitor_timeout','rec_timeout']
         self.mainQueue = multiprocessing.Queue()
         self.shareStatusDict = multiprocessing.Manager().dict()
         self.shareMonitorDict = multiprocessing.Manager().dict()
@@ -388,7 +389,7 @@ class AcrcloudMonitor:
     def initLog(self):
         self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-16s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
         self.dlog = AcrcloudLogger('Monitor@Main', logging.INFO)
-        if not self.dlog.addFilehandler(logfile = self.config["log"]["monitorLog"], logdir = self.config["log"]["dir"]):
+        if not self.dlog.addFilehandler(logfile = "Monitor.log", logdir = self.config["log"]["dir"]):
             sys.exit(1)
         if not self.dlog.addStreamHandler(self.colorfmt):
             sys.exit(1)

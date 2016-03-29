@@ -1,19 +1,16 @@
 config = {
     "server":{
-        "port":3005,
-        "timeout_Threshold":20,
-        "dead_Threshold":20,
-        "reborn_Time_Sec":20,
+        "port":3005, #Local Monitor Server Port
     },
     "user":{
+        #ACRCloud Broadcast Monitoring, Local Project Access_Key And Access_Secret
         "access_key":"48ba195edd0107061f2062f0cd2bf5a3",
         "access_secret":"KxTGNBiZOM0nS2TmY22ApFjsHeYGjnVyYm9Bh5Uc",
+        #API URL To Get The Local Monitor Streams Info
         "api_url":"https://api.acrcloud.com/v1/local-monitor-streams?access_key={0}",
     },
-    "recognize":{
-        "init_nums":{'4core':50, '8core':100, '16core':150, '32core':200},
-    },
     "database":{
+        #Local Database Config
         "host":"127.0.0.1",
         "port":3306,
         "user":"root",
@@ -21,20 +18,7 @@ config = {
         "db":"monitor_result",
     },
     "log":{
+        #Local Monitor Server Log Config
         "dir":"./radioLog",
-        "monitorLog":"Monitor.log",
-        "workerLog":"Worker@{0}.log",
-        "recLog":"RecWorker.log",
-    },
-    "addkeys":[
-        'access_key',
-        'access_secret',
-        'rec_host',
-        'stream_id',
-        'stream_url',
-        'interval',
-        'monitor_length',
-        'monitor_timeout',
-        'rec_timeout'
-    ],
+    }
 }

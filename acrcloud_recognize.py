@@ -118,8 +118,8 @@ class Acrcloud_Rec_Manager:
         self.initWorkers(self._init_nums)
 
     def initLog(self):
-        self._dlog = AcrcloudLogger(self._config['log']['recLog'], logging.INFO)
-        if not self._dlog.addFilehandler(logfile = self._config['log']['recLog'], logdir = self._config['log']['dir']):
+        self._dlog = AcrcloudLogger("RecWorker.log", logging.INFO)
+        if not self._dlog.addFilehandler(logfile = "RecWorker.log", logdir = self._config['log']['dir']):
             self.exitRecM('rec_error#0#init_flog_error')
         if not self._dlog.addStreamHandler():
             self.exitRecM('rec_error#0#init_slog_error')
@@ -127,8 +127,9 @@ class Acrcloud_Rec_Manager:
     def initConfig(self):
         #self._host = self._config['recognize']['host']
         #self._query_type = self._config['recognize']['query_type']
+        init_nums_map = {'4core':20, '8core':40, '16core':60, '32core':80}
         cpu_core = multiprocessing.cpu_count()
-        self._init_nums = self._config['recognize']['init_nums'].get(str(cpu_core)+'core', 50)
+        self._init_nums = init_nums_map.get(str(cpu_core)+'core', 20)
         self._worker_num = 0
         
         #####################

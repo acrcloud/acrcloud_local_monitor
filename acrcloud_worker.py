@@ -306,8 +306,8 @@ class AcrcloudWorker:
         self.isFirst = True
         
     def initLog(self):
-        self._dlog = AcrcloudLogger(self._config['log']['workerLog'].format(self._stream_id), logging.INFO)
-        if not self._dlog.addFilehandler(logfile = self._config['log']['workerLog'].format(self._stream_id), logdir = self._config['log']['dir']):
+        self._dlog = AcrcloudLogger("SWorker_{0}.log".format(self._stream_id), logging.INFO)
+        if not self._dlog.addFilehandler(logfile = "SWorker_{0}.log".format(self._stream_id), logdir = self._config['log']['dir']):
             sys.exit(1)
         if not self._dlog.addStreamHandler():
             sys.exit(1)
@@ -323,11 +323,11 @@ class AcrcloudWorker:
             self._monitor_interval = info.get('interval', 5)
             self._monitor_length = info.get('monitor_length', 20)
             self._monitor_timeout = info.get('monitor_timeout', 30)
-            self._timeout_Threshold = self._config["server"]["timeout_Threshold"]
+            self._timeout_Threshold = 20 #self._config["server"]["timeout_Threshold"]
             self._rec_timeout = info.get('rec_timeout', 5)
-            self.baseRebornTime = self._config["server"]["reborn_Time_Sec"]
+            self.baseRebornTime = 20 #self._config["server"]["reborn_Time_Sec"]
             self.rebornTime = 0
-            self.deadThreshold = self._config["server"]["dead_Threshold"]
+            self.deadThreshold = 20 #self._config["server"]["dead_Threshold"]
             self.isFirst = True
             
             if self._monitor_timeout <= self._monitor_interval + self._monitor_length:
