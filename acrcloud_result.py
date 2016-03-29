@@ -30,7 +30,7 @@ class Acrcloud_Result:
         self._resultQueue = resultQueue
         self.init_logger()
         self.data_backup = Backup(self._config, self.dlog)
-        self.dlog.logger.info("Acrcloud_Result Init Success!")
+        self.dlog.logger.warn("Warn@Acrcloud_Result Init Success!")
         
     def init_logger(self):
         self.dlog = acrcloud_logger.AcrcloudLogger('LocalResult')
