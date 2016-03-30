@@ -4,10 +4,11 @@
 import time
 import json
 import tools_memcache
+from acrcloud_config import config
 
 class MonitorClient:
     def __init__(self):
-        self.mc = memcache.Client(["127.0.0.1:3005"])
+        self.mc = memcache.Client(["127.0.0.1:{0}".format(config["server"]["port"])])
 
     def refresh(self):
         print self.mc.set('refresh', '')

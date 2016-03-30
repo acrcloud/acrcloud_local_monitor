@@ -89,6 +89,8 @@ class AcrcloudManager:
                     ret = self.monitor.reFresh()
                 elif cmd_info[1] == 'pause':
                     ret = self.monitor.pauseM(data_block)
+                elif cmd_info[1] == 'stop':
+                    ret = self.monitor.stop()
                 else:
                     ret = "NOT_STORED"
                 return ret
@@ -150,12 +152,12 @@ class AcrcloudSpringboard:
                                                                 self.sworker))
             self.manager_proc.start()
             if not self.manager_proc.is_alive():
-                self.dlog.logger.error('Acrcloud@Springboard.Manager_Proc_Not_Alive')
+                self.dlog.logger.error('Acrcloud@Springboard.Manager_Proc_Not_Alive & stop')
                 sys.exit(1)
             else:
                 self.dlog.logger.warn('Acrcloud@Springboard.Manager_Init_Success')
         except Exception as e:
-            self.dlog.logger.error('Acrcloud@Springboard.Init_Manage_Failed', exc_info=True)
+            self.dlog.logger.error('Acrcloud@Springboard.Init_Manage_Failed & stop', exc_info=True)
             sys.exit(1)
             
     def checkInfo(self, info):
@@ -360,6 +362,13 @@ class AcrcloudSpringboard:
             radiostat["type"] = "unknow"
         return radiostat
 
+    def stop(self):
+        try:
+            sys.exit(1)
+            #self.mainQueue.put(('stop', ''))
+        except Exception as e:
+            self.dlog.logger.error('stop failed', exc_info=True)
+    
     
 class AcrcloudMonitor:
     
@@ -558,13 +567,19 @@ class AcrcloudMonitor:
             self.dlog.logger.error("doIt Error:", exc_info=True)
 
     def start(self):
+        self._running = True
         while 1:
+            if not self._running:
+                break
             try:
                 cmd, info = self.springQueue.get()
             except Queue.Empty:
                 continue
             self.doIt(cmd, info)
 
+    def stop(self):
+        self._running = False
+            
 
 def MonitorManager(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker):
     mManager = AcrcloudMonitor(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker)
