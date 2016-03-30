@@ -38,7 +38,7 @@ class AcrcloudManager:
         self.initLog()
         
     def initLog(self):
-        self.colorfmt = "$MAGENTA%(asctime)s$RESET - $RED%(name)-16s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
+        self.colorfmt = "$MAGENTA%(asctime)s$RESET - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
         self.dlog = AcrcloudLogger('Client@Main', logging.INFO)
         if not self.dlog.addStreamHandler(self.colorfmt):
             sys.exit(1)
@@ -134,7 +134,7 @@ class AcrcloudSpringboard:
         self.initStreams()
         
     def initLog(self):
-        self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-16s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
+        self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
         self.dlog = AcrcloudLogger('Acrcloud@Springboard', logging.INFO)
         if not self.dlog.addStreamHandler(self.colorfmt):
             sys.exit(1)
@@ -396,7 +396,7 @@ class AcrcloudMonitor:
         self.initRes()
                 
     def initLog(self):
-        self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-16s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
+        self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
         self.dlog = AcrcloudLogger('Monitor@Main', logging.INFO)
         if not self.dlog.addFilehandler(logfile = "Monitor.log", logdir = self.config["log"]["dir"]):
             sys.exit(1)
