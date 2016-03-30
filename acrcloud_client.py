@@ -19,6 +19,9 @@ class MonitorClient:
     def pause(self, id):
 	print self.mc.set('pause', json.dumps({'stream_id':str(id), 'stream_url':''}))
 
+    def stop(self):
+        print self.mc.set('stop', '')
+
     def state(self, id):
         state = self.mc.get('state-'+str(id))
         jsonstate = json.loads(state)
@@ -26,7 +29,7 @@ class MonitorClient:
         
     def start(self):
         while 1:
-            cmd = raw_input("(1.refresh, 2.restart, 3.state, 4.pause): ")
+            cmd = raw_input("(1.refresh, 2.restart, 3.state, 4.pause, 5.stop): ")
             if cmd == '1':
                 self.refresh()
             elif cmd == '2':
@@ -38,6 +41,8 @@ class MonitorClient:
             elif cmd == '4':
                 id = raw_input('stream_id: ')
                 self.pause(id.strip())
+            elif cmd == '5':
+                self.stop()
         
 
 if __name__ == '__main__':
