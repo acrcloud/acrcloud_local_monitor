@@ -166,15 +166,15 @@ class Acrcloud_Rec_Manager:
         except Exception as e:
             self._dlog.logger.error('Error@Del_Rec_Workers', exc_info=True)
             self._mainQueue.put('rec_error#4#del_rec_workers_error')
-            sys.exit(1)
 
-    def exitRecM(self, msg):
+    def exitRecM(self):
         self.delWorkers()
-        self._mainQueue.put(msg)
-        sys.exit(1)
+        self._running = False
             
     def start(self):
         while 1:
+            if not self._running:
+                break
             try:
                 time.sleep(1)
                 #deal main_news
