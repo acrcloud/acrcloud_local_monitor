@@ -172,6 +172,7 @@ class Acrcloud_Rec_Manager:
         self._running = False
             
     def start(self):
+        self._running = True
         while 1:
             if not self._running:
                 break
