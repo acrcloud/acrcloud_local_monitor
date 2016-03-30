@@ -55,7 +55,7 @@ class AcrcloudLogger:
         self.logger = logging.getLogger(logname)
         self.logger.setLevel(loglevel)
         self.default_fmt = '%(asctime)s - %(name)s - %(levelname)8s - %(message)s'
-        self.default_colorfmt = "$MAGENTA%(asctime)s$RESET - $COLOR%(name)-16s$RESET - $COLOR%(levelname)-8s$RESET - %(message)s"
+        self.default_colorfmt = "$MAGENTA%(asctime)s$RESET - $COLOR%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - %(message)s"
         self.default_dir = './radioLog'
         
     def addFilehandler(self, logfile, logdir = None, fmt = '', loglevel = logging.INFO, when='D', interval=30, backupCount=1):
