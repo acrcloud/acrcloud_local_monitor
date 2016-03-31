@@ -70,6 +70,7 @@ class Acrcloud_Rec_Worker(threading.Thread):
                 res = self._recognizer.recognize(stream_info[0],
                                                  stream_info[6][:stream_info[5]*16000],
                                                  "fingerprint",
+                                                 stream_info[1],
                                                  stream_info[3],
                                                  stream_info[4])
                 json_res = json.loads(res)
@@ -167,18 +168,19 @@ class Acrcloud_Rec_Manager:
             self._dlog.logger.error('Error@Del_Rec_Workers', exc_info=True)
             self._mainQueue.put('rec_error#4#del_rec_workers_error')
 
-    def exitRecM(self):
-        self.delWorkers()
-        self._running = False
-            
     def start(self):
         self._running = True
         while 1:
             if not self._running:
                 break
             try:
-                time.sleep(1)
-                #deal main_news
+                cmdinfo = self._mainQueue.get()
             except Queue.Empty:
                 time.sleep(2)
+            if cmdinfo[0] == 'stop':
+                self.stop()
             
+    def stop(self):
+        self.delWorkers()
+        self._running = False
+        self._dlog.logger.warn('Warn@Acrcloud_Recoginze_Stop')

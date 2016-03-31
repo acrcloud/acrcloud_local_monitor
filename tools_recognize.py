@@ -65,9 +65,9 @@ class acrcloud_recognize:
     def gen_fp(self, buf, rate=0):
         return acrcloud_stream_decode.create_fingerprint(buf, False)
 
-    def do_recogize(self, host, query_data, query_type, access_key, access_secret, timeout=5):
+    def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=5):
         http_method = "POST"
-        http_url_file = "/v1/identify"
+        http_url_file = "/v1/monitor/identify" #"/v1/identify"
         data_type = query_type
         signature_version = "1"
         timestamp = int(time.mktime(datetime.datetime.utcfromtimestamp(time.time()).timetuple()))
@@ -76,7 +76,8 @@ class acrcloud_recognize:
         string_to_sign = http_method+"\n"+http_url_file+"\n"+access_key+"\n"+data_type+"\n"+signature_version+"\n"+str(timestamp)
         sign = base64.b64encode(hmac.new(str(access_secret), str(string_to_sign), digestmod=hashlib.sha1).digest())
     
-        fields = {'access_key':access_key, 
+        fields = {'access_key':access_key,
+                  'stream_id':stream_id,
                   'sample_bytes':sample_bytes, 
                   'timestamp':str(timestamp), 
                   'signature':sign, 
@@ -87,11 +88,11 @@ class acrcloud_recognize:
         res = self.post_multipart(server_url, fields, {"sample" : query_data}, timeout)
         return res
 
-    def recognize(self, host, wav_buf, query_type, access_key, access_secret, timeout=5, isCheck=False):
+    def recognize(self, host, wav_buf, query_type, stream_id, access_key, access_secret, timeout=5, isCheck=False):
         try:
             res = ''
             pcm_buf = self.gen_fp(wav_buf, self.rate)
-            res = self.do_recogize(host, pcm_buf, query_type, access_key, access_secret, timeout)
+            res = self.do_recogize(host, pcm_buf, query_type, stream_id, access_key, access_secret, timeout)
         except Exception as e:
             self.dlog.logger.error('recognize error', exc_info=True)
         return res
