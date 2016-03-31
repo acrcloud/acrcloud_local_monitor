@@ -382,6 +382,7 @@ class AcrcloudMonitor:
         self.recQueue = multiprocessing.Queue()
         self.recMainQueue = multiprocessing.Queue()
         self.resultQueue= multiprocessing.Queue()
+        self.resMainQueue = multiprocessing.Queue()
         self.springQueue = mainQueue
         self.config  = config
         self.shareMonitorDict = shareMonitorDict
@@ -419,7 +420,8 @@ class AcrcloudMonitor:
 
     def initRes(self):
         self.resproc = multiprocessing.Process(target=self.sworker,
-                                               args=(self.resultQueue,
+                                               args=(self.resMainQueue,
+                                                     self.resultQueue,
                                                      self.config))
         self.resproc.start()
         if not self.resproc.is_alive():
@@ -591,8 +593,7 @@ class AcrcloudMonitor:
         self.delAllM()
         self.dlog.logger.warn('Warn@Acrcloud_Manager.DelAllMontirs_Success')
         self.recMainQueue.put(('stop',''))
-        #self.recproc.stop()
-        #self.resproc.stop()
+        self.resMainQueue.put(('stop',''))
         self._running = False
         self.dlog.logger.warn('Warn@Acrcloud_Manager_Stop')
         sys.exit(1)
@@ -609,8 +610,8 @@ def RecWorker(mainqueue, recqueue, resultqueue, shareDict, config):
     rWorker = Acrcloud_Rec_Manager(mainqueue, recqueue, resultqueue, shareDict, config)
     rWorker.start()
 
-def ResWorker(resultqueue, config):
-    sWorker = Acrcloud_Result(resultqueue, config)
+def ResWorker(mainqueue, resultqueue, config):
+    sWorker = Acrcloud_Result(mainqueue, resultqueue, config)
     sWorker.start()
     
 acrcloudMana = AcrcloudManager(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker))

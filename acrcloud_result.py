@@ -6,6 +6,7 @@ import json
 import copy
 import time
 import redis
+import Queue
 import MySQLdb
 import datetime
 import threading
@@ -24,9 +25,10 @@ NORESULT = "noResult"
 
 
 class Acrcloud_Result:
-    def __init__(self, resultQueue, config):
+    def __init__(self, mainqueue, resultQueue, config):
         self._config = config
         self._log_dir = self._config['log']['dir']
+        self._mainQueue = mainqueue
         self._resultQueue = resultQueue
         self.init_logger()
         self.data_backup = Backup(self._config, self.dlog)
@@ -46,6 +48,15 @@ class Acrcloud_Result:
     def start(self):
         self._running = True
         while 1:
+            if not self._running:
+                break
+            try:
+                maininfo = self._mainQueue.get(block = False)
+                if maininfo[0] == 'stop':
+                    self.stop()
+            except Queue.Empty:
+                pass
+            
             try:
                 resinfo = self._resultQueue.get()
             except Queue.Empty:
@@ -53,7 +64,10 @@ class Acrcloud_Result:
             
             self.deal_result(resinfo)
 
-
+    def stop(self):
+        self._running = False
+        self.dlog.logger.warn('Warn@Acrcloud_Result_Stop')
+        
 class ResultFilter:
     def __init__(self, dlog):
         self._dlog = dlog
