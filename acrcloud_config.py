@@ -4,8 +4,8 @@ config = {
     },
     "user":{
         #ACRCloud Broadcast Monitoring, Local Project Access_Key And Access_Secret
-        "access_key":"48ba195edd0107061f2062f0cd2bf5a3",
-        "access_secret":"KxTGNBiZOM0nS2TmY22ApFjsHeYGjnVyYm9Bh5Uc",
+        "access_key":"",
+        "access_secret":"",
         #API URL To Get The Local Monitor Streams Info
         "api_url":"https://api.acrcloud.com/v1/local-monitor-streams?access_key={0}",
     },

@@ -52,17 +52,18 @@ class Acrcloud_Result:
                 break
             try:
                 maininfo = self._mainQueue.get(block = False)
-                if maininfo[0] == 'stop':
+                if maininfo and maininfo[0] == 'stop':
                     self.stop()
             except Queue.Empty:
                 pass
             
             try:
-                resinfo = self._resultQueue.get()
+                resinfo = self._resultQueue.get(block = False)
             except Queue.Empty:
                 continue
             
             self.deal_result(resinfo)
+            time.sleep(0.5)
 
     def stop(self):
         self._running = False
