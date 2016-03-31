@@ -592,7 +592,9 @@ class AcrcloudMonitor:
     def stop(self):
         self.delAllM()
         self.dlog.logger.warn('Warn@Acrcloud_Manager.DelAllMontirs_Success')
+        self.dlog.logger.warn('recognize MainQueue put')
         self.recMainQueue.put(('stop',''))
+        self.dlog.logger.warn('result MainQueue put')
         self.resMainQueue.put(('stop',''))
         self._running = False
         self.dlog.logger.warn('Warn@Acrcloud_Manager_Stop')
