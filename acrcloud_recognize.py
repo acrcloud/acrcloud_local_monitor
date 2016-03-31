@@ -102,7 +102,7 @@ class Acrcloud_Rec_Worker(threading.Thread):
         
     def stop(self):
         self._running = False
-        self._dlogger.info('MSG@Acrcloud_Rec_Worker({0}).Delete_Success'.format(self._worker_num))
+        #self._dlogger.info('MSG@Acrcloud_Rec_Worker({0}).Delete_Success'.format(self._worker_num))
         
 class Acrcloud_Rec_Manager:
 
@@ -165,7 +165,7 @@ class Acrcloud_Rec_Manager:
                 handler.stop()
                 self._worker_num -= 1
                 count += 1
-            self._dlog.logger.warning('Warn@Del_Rec_Workers(Num:{0})'.format(count))
+            self._dlog.logger.warning('Warn@Del_Rec_Workers_Success.(Totle Num:{0})'.format(count))
         except Exception as e:
             self._dlog.logger.error('Error@Del_Rec_Workers', exc_info=True)
             self._mainQueue.put('rec_error#4#del_rec_workers_error')
