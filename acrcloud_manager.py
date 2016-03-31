@@ -364,11 +364,11 @@ class AcrcloudSpringboard:
 
     def stop(self):
         try:
-            sys.exit(1)
-            #self.mainQueue.put(('stop', ''))
+            self.mainQueue.put(('stop', ''))
+            return 'STORED'
         except Exception as e:
             self.dlog.logger.error('stop failed', exc_info=True)
-    
+        return 'NOT_STORED'
     
 class AcrcloudMonitor:
     
@@ -487,6 +487,14 @@ class AcrcloudMonitor:
             self.dlog.logger.error('Del Monitor Error:', exc_info=True)
         self.dlog.logger.error('Del Monitor Failed ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
         return False
+
+    def delAllM(self):
+        try:
+            for stream_id in self.procDict.keys():
+                if self.delMonitor({'stream_id':stream_id, 'stream_url':''}):
+                    del self.shareMonitorDict[stream_id]
+        except Exception as e:
+            self.dlog.logger.error('Del All Monitors Error', exc_info=True)
     
     def reStart(self, jsoninfo):
         try:
@@ -563,6 +571,8 @@ class AcrcloudMonitor:
                 self.reStart(info)
             elif cmd == 'pause':
                 self.pauseM(info)
+            elif cmd == 'stop':
+                self.stop()
         except Exception as e:
             self.dlog.logger.error("doIt Error:", exc_info=True)
 
@@ -578,8 +588,14 @@ class AcrcloudMonitor:
             self.doIt(cmd, info)
 
     def stop(self):
+        self.delAllM()
+        self.dlog.logger.warn('Warn@Acrcloud_Manager.DelAllMontirs_Success')
+        self.recMainQueue.put(('stop',''))
+        #self.recproc.stop()
+        #self.resproc.stop()
         self._running = False
-            
+        self.dlog.logger.warn('Warn@Acrcloud_Manager_Stop')
+        sys.exit(1)
 
 def MonitorManager(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker):
     mManager = AcrcloudMonitor(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker)
