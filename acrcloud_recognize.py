@@ -160,10 +160,12 @@ class Acrcloud_Rec_Manager:
 
     def delWorkers(self):
         try:
+            count = 0
             for id, handler in self._workerpool:
                 handler.stop()
-                self._dlog.logger.warning('Warn@Del_Rec_Worker(ID:{0}/{1})'.format(id, self._worker_num))
                 self._worker_num -= 1
+                count += 1
+            self._dlog.logger.warning('Warn@Del_Rec_Workers(Num:{0})'.format(count))
         except Exception as e:
             self._dlog.logger.error('Error@Del_Rec_Workers', exc_info=True)
             self._mainQueue.put('rec_error#4#del_rec_workers_error')
