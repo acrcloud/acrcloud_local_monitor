@@ -224,11 +224,14 @@ class Worker_DownloadStream(threading.Thread):
 
     def produce_data(self):
         try:
-            self._downloadf.set_callback(self.callback)
-            code, msg = self._downloadf.decode_audio(self._stream_url,
-                                                     self._read_size_sec,
-                                                     self._open_timeout_sec,
-                                                     self._read_timeout_sec)
+            acrdict = {
+                'callback_func':self.callback,
+                'stream_url':self._stream_url,
+                'read_size_sec':self._read_size_sec,
+                'open_timeout_sec':self._open_timeout_sec,
+                'read_timeout_sec':self._read_timeout_sec,
+            }
+            code, msg = self._downloadf.decode_audio(acrdict)
             return code, msg
         except Exception as e:
             self._dlogger.error('Error@Worker_DownloadStream.produce_data', exc_info=True)
