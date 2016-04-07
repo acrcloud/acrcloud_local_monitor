@@ -103,7 +103,7 @@ class Worker_DownloadStream(threading.Thread):
         self._open_timeout_sec = 20
         self._read_timeout_sec = timeout_sec
         self._timeout_Threshold = timeout_Threshold
-        self.is_video_timeout = 10
+        self._invalid_Threshlod = 3
         self._isFirst = isFirst
         self.checkURL()
         self._Runing = True
@@ -215,7 +215,14 @@ class Worker_DownloadStream(threading.Thread):
                     response.close()
         return ''
             
-    def callback(self, buf):
+    def callback(self, isvideo, buf):
+        if self._isFirst:
+            if isvideo == 1:
+                self._cmdQueue.put("ISVIDEO#1#video")
+            else:
+                self._cmdQueue.put("ISVIDEO#0#audio")
+            self._dlogger.warn("Get Stream Type: {0}".format('Video' if isvideo == 1 else 'Audio'))
+            self._isFirst = False
         if buf:
             self._workQueue.put(buf)
         if not self._Runing:
@@ -240,6 +247,7 @@ class Worker_DownloadStream(threading.Thread):
     def run(self):
         self._Runing = True
         self._timeout_count = 0
+        self._invalid_count = 0
         while 1:
             if not self._Runing:
                 break
@@ -266,9 +274,13 @@ class Worker_DownloadStream(threading.Thread):
                 self._dlogger.error('Error@Worker_DownloadStream.pause get data.{0}'.format(self._stream_url))
                 break
             elif code == 1 or code == '1':
-                self._dlogger.error('Error@Worker_DownloadStream.invalid_URL.{0}'.format(self._stream_url))
-                self._cmdQueue.put('STATUS#6#bad_url')
-                break            
+                self._invalid_count += 1
+                if self._invalid_count > self._invalid_Threshlod:
+                    self._dlogger.error('Error@Worker_DownloadStream.invalid_URL.{0}'.format(self._stream_url))
+                    self._cmdQueue.put('STATUS#6#bad_url')
+                    break
+                time.sleep(2)
+                continue
             elif code == 10 or code == '10':
                 self._timeout_count += 1
                 if self._timeout_count > self._timeout_Threshold:
@@ -276,9 +288,11 @@ class Worker_DownloadStream(threading.Thread):
                     break
                 self._dlogger.error('Error@Worker_DownloadStream.timeout.{0}'.format(self._stream_url))
                 self._cmdQueue.put('STATUS#1#timeout')
+                self._invalid_count = 0
                 time.sleep(2)
                 continue
             elif code == 7 or code == '7':
+                self._invalid_count = 0
                 self._dlogger.error('Error@Worker_DownloadStream.decode.restart')
                 continue
             else:
