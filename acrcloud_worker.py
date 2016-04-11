@@ -26,7 +26,7 @@ from xml.dom import minidom
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    import BeautifulSoup import BeautifulSoup
+    from BeautifulSoup import BeautifulSoup
 
 import acrcloud_stream_decode as acrcloud_download
 from acrcloud_logger import AcrcloudLogger
