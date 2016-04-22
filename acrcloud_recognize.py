@@ -128,7 +128,7 @@ class Acrcloud_Rec_Manager:
     def initConfig(self):
         #self._host = self._config['recognize']['host']
         #self._query_type = self._config['recognize']['query_type']
-        init_nums_map = {'4core':20, '8core':40, '16core':60, '32core':80}
+        init_nums_map = {'4core':20, '8core':30, '16core':40, '32core':60}
         cpu_core = multiprocessing.cpu_count()
         self._init_nums = init_nums_map.get(str(cpu_core)+'core', 20)
         self._worker_num = 0
