@@ -8,7 +8,7 @@ Local Monitoring Services is used to monitor live radio streams in your local se
 * Works on Linux
 
 # How To Use
-1. You should register an account on the [ACRCloud platform](https://console.acrcloud.com/), and create a [Broadcast Monitoring project](https://docs.acrcloud.com/broadcast-monitoring) with local monitoring type, you will get access_key and access_secret, then add your live radio streams in your project.
+1. You should register an account on the [ACRCloud platform](https://console.acrcloud.com/), and create a [Broadcast Monitoring project](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-music/) with local monitoring type, you will get access_key and access_secret, then add your live radio streams in your project.
 2. Clone the code in your local server.
 3. Install MySQL, import acrcloud_database.sql to your mysql server. `$mysql -uroot -p < acrcloud_database.sql`.
 4. Modify configuration file (acrcloud_config.py), fill access_key, access_secret and database info in the config file.
