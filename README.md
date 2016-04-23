@@ -15,6 +15,7 @@ Local Monitoring Services is used to monitor live radio streams in your local se
 5. Run `python acrcloud_server.py` to start monitor server.
 6. You can use client to refresh, get stream state, pause and restart stream, run `python acrcloud_client.py`.
 7. You can use `Ctrl + \` to stop monitor server (in Linux).
+8. You can get monitoring results in your MySql database.
 
 ## Python Dependency Library
 1. [Twisted](https://github.com/twisted/twisted)
