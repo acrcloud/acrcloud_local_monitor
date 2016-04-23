@@ -79,7 +79,7 @@ class Worker_CollectData(threading.Thread):
                     self._recQueue.put((self._rec_host, self._stream_id, self._stream_url,
                                         self._access_key, self._access_secret,
                                         self._monitor_length, self._cur_buffer, timestamp))
-                    self._dlogger.info('MSG@Get_Stream_Buffer(Buffer Size:{0})'.format(len(self._cur_buffer)))
+                    self._dlogger.info('MSG@Get_Stream_Buffer(buffer size:{0})'.format(len(self._cur_buffer)))
                     self._cur_buffer = ""
             except Exception as e:
                 self._dlogger.error('Error@Worker_CollectData.run', exc_info=True)
