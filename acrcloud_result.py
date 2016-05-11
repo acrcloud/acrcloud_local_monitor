@@ -5,7 +5,6 @@ import sys
 import json
 import copy
 import time
-import redis
 import Queue
 import MySQLdb
 import datetime
