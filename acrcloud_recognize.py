@@ -77,15 +77,15 @@ class Acrcloud_Rec_Worker(threading.Thread):
                 if 'response' in json_res and json_res['response']['status']['code'] == 0:
                     result['result'] = json_res
                     self.callback_fun(result)
-                    self._dlogger.info('MSG@Worker_Recognize({0}).sendResult.({1}, {2})'.format(self._worker_num,
+                    self._dlogger.info('MSG@Worker_Recognize({0}).Get_Recognize_Result.({1}, {2})'.format(self._worker_num,
                                                                                                 stream_info[1],
                                                                                                 stream_info[7]))
                 elif 'status' in json_res and json_res['status']['code'] == 0:
                     result['result'] = json_res
                     self.callback_fun(result)
-                    self._dlogger.info('MSG@Worker_Recognize({0}).sendResult.({1}, {2})'.format(self._worker_num,
-                                                                                                stream_info[1],
-                                                                                                stream_info[7]))
+                    self._dlogger.info('MSG@Worker_Recognize({0}).Get_Recognize_Result.({1}, {2})'.format(self._worker_num,
+                                                                                                          stream_info[1],
+                                                                                                          stream_info[7]))
                 elif 'status' in json_res and json_res['status']['code'] == 3001:
                     self._dlogger.info('MSG@Worker_Recognize({0}).access_key.error.({1}, {2})'.format(self._worker_num,
                                                                                                       stream_info[1],
@@ -93,9 +93,9 @@ class Acrcloud_Rec_Worker(threading.Thread):
                 else:
                     result['result'] = json_res#'noResult'
                     self.callback_fun(result)
-                    self._dlogger.info('MSG@Worker_Recognize({0}).noResult.({1}, {2})'.format(self._worker_num,
-                                                                                              stream_info[1],
-                                                                                              stream_info[7]))
+                    self._dlogger.info('MSG@Worker_Recognize({0}).Get_No_Recognize_Result.({1}, {2})'.format(self._worker_num,
+                                                                                                             stream_info[1],
+                                                                                                             stream_info[7]))
             except Exception as e:
                 self._dlogger.error('Error@Worker_Recognize({0})'.format(self._worker_num), exc_info=True)
                 self._dlogger.error('Error@result: {0}'.format(json.dumps(result)))
@@ -119,7 +119,7 @@ class Acrcloud_Rec_Manager:
         self.initWorkers(self._init_nums)
 
     def initLog(self):
-        self._dlog = AcrcloudLogger("RecWorker.log", logging.INFO)
+        self._dlog = AcrcloudLogger("RecManager", logging.INFO)
         if not self._dlog.addFilehandler(logfile = "RecWorker.log", logdir = self._config['log']['dir']):
             self.exitRecM('rec_error#0#init_flog_error')
         if not self._dlog.addStreamHandler():

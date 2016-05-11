@@ -26,7 +26,7 @@ from xml.dom import minidom
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    from BeautifulSoup import BeautifulSoup
+    from BeautifulSoup import BeautifulSoup 
 
 import acrcloud_stream_decode as acrcloud_download
 from acrcloud_logger import AcrcloudLogger
@@ -79,7 +79,7 @@ class Worker_CollectData(threading.Thread):
                     self._recQueue.put((self._rec_host, self._stream_id, self._stream_url,
                                         self._access_key, self._access_secret,
                                         self._monitor_length, self._cur_buffer, timestamp))
-                    self._dlogger.info('MSG@Get_Stream_Buffer(buffer size:{0})'.format(len(self._cur_buffer)))
+                    self._dlogger.info('MSG@Get_Stream_Buffer(Buffer Size: {0})'.format(len(self._cur_buffer)))
                     self._cur_buffer = ""
             except Exception as e:
                 self._dlogger.error('Error@Worker_CollectData.run', exc_info=True)
@@ -158,7 +158,7 @@ class Worker_DownloadStream(threading.Thread):
             if self._stream_url.strip().startswith("mms://"):
                 slist = self.parseMMS(self._stream_url)
                 if slist:
-                    print "\nmms ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0])
+                    self._dlogger.info("mms ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0]))
                     self._stream_url = slist[0]
             
             path = urlparse.urlparse(self._stream_url).path
@@ -166,22 +166,22 @@ class Worker_DownloadStream(threading.Thread):
             if ext == '.m3u':
                 slist = self.parseM3U(self._stream_url)
                 if slist:
-                    print "\nm3u ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0])
+                    self._dlogger.info("m3u ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0]))
                     self._stream_url = slist[0]
             elif ext == '.xspf':
                 slist = self.parseXSPF(self._stream_url)
                 if slist:
-                    print "\nxspf ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0])
+                    self._dlogger.info("xspf ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0]))
                     self._stream_url = slist[0]
             elif ext == '.pls':
                 slist = self.parsePLS(self._stream_url)
                 if slist:
-                    print "\npls ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0])
+                    self._dlogger.info("pls ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0]))
                     self._stream_url = slist[0]
             elif ext == '.asx':
                 slist = self.parseASX(self._stream_url)
                 if slist:
-                    print "\nasx ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0])
+                    self._dlogger.info("asx ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0]))
                     self._stream_url = slist[0]
 
             if slist:

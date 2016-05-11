@@ -44,7 +44,6 @@ class AcrcloudManager:
             sys.exit(1)
 
     def addClient(self, client):
-        #add a client
         self.sockNum = self.sockNum + 1
         self.client2id[client] = self.sockIndex
         self.id2client[self.sockIndex] = client
@@ -52,7 +51,6 @@ class AcrcloudManager:
         self.sockIndex = self.sockIndex + 1
     
     def delClient(self, client):
-        #del a client
         if client in self.client2id:
             self.sockNum = self.sockNum - 1
             _sockid = self.client2id[client]
@@ -61,14 +59,12 @@ class AcrcloudManager:
             self.dlog.logger.info('Close Client, ID: {0}'.format(_sockid))
     
     def getSockid(self, client):
-        #get sockid by client
         if client in self.client2id:
             return self.client2id[client]
         else:
             return None
         
     def getClient(self, sockid):
-        #get client by sockid
         if sockid in self.id2client:
             return self.id2client[sockid]
         else:
@@ -152,12 +148,12 @@ class AcrcloudSpringboard:
                                                                 self.sworker))
             self.manager_proc.start()
             if not self.manager_proc.is_alive():
-                self.dlog.logger.error('Acrcloud@Springboard.Manager_Proc_Not_Alive & stop')
+                self.dlog.logger.error('Error@Springboard:create manager process failed, it will stop')
                 sys.exit(1)
             else:
-                self.dlog.logger.warn('Acrcloud@Springboard.Manager_Init_Success')
+                self.dlog.logger.warn('Warn@Springboard:manager init success')
         except Exception as e:
-            self.dlog.logger.error('Acrcloud@Springboard.Init_Manage_Failed & stop', exc_info=True)
+            self.dlog.logger.error('Error@Springboard:init manager failed, it will stop', exc_info=True)
             sys.exit(1)
             
     def checkInfo(self, info):
@@ -204,7 +200,7 @@ class AcrcloudSpringboard:
             streaminfo = json.loads(datainfo)
             return json.dumps(streaminfo)
         except Exception as e:
-            self.dlog.logger.error('Error@getStreamInfo', exc_info=True)
+            self.dlog.logger.error('Error@Springboard.getStreamInfo', exc_info=True)
         
     def initStreams(self):
         try:
@@ -220,14 +216,14 @@ class AcrcloudSpringboard:
                 self.shareStatusDict[stream_id] = ['0#running', '2#unknow']
                 self.shareDict['filter_chinese_'+stream_id] = jsoninfo.get('filter_chinese', 1)
                 self.shareDict['delay_'+stream_id] = int(jsoninfo.get('delay', 1))
-                self.dlog.logger.info('MSG@initStreams.add_one_stream:{0}'.format(stream_id))
+                self.dlog.logger.info('MSG@Springboard.initStreams.add one stream({0}) success'.format(stream_id))
             self.mainQueue.put(('heiheihei', ''))
         except Exception as e:
-            self.dlog.logger.error('Error@initStreams', exc_info=True)
+            self.dlog.logger.error('Error@Springboard.initStreams', exc_info=True)
 
     def reFresh(self):
         try:
-            self.dlog.logger.warn('Warn@reFresh start...')
+            self.dlog.logger.warn('Warn@Springboard.reFresh start...')
             stream_data = self.getStreamInfo(self.api_url, self.access_key)
             info_list = json.loads(stream_data)
             new_stream_ids = set()
@@ -260,7 +256,7 @@ class AcrcloudSpringboard:
             self.mainQueue.put(('refresh', ''))
             return 'STORED'
         except Exception as e:
-            self.dlog.logger.error('Error@Refresh_Streams', exc_info=True)
+            self.dlog.logger.error('Error@Springboard.refresh_streams', exc_info=True)
         return 'NOT_STORED'
 
     def gen_monitor_str(self, jsoninfo):
@@ -285,7 +281,7 @@ class AcrcloudSpringboard:
                     self.mainQueue.put(('restart', jsoninfo))
                     return 'STORED'            
         except Exception as e:
-            self.dlog.logger.error('restart monitor failed', exc_info=True)
+            self.dlog.logger.error('Error@Springboard.restart_stream', exc_info=True)
         return 'NOT_STORED'
 
     def pauseM(self, info):
@@ -298,7 +294,7 @@ class AcrcloudSpringboard:
                     self.mainQueue.put(('pause', jsoninfo))
                     return 'STORED'
         except Exception as e:
-            self.dlog.logger.error('pause monitor failed', exc_info=True)
+            self.dlog.logger.error('Error@Springboard.pause_stream', exc_info=True)
         return 'NOT_STORED'
     
     def getStat(self, stream_id):
@@ -335,7 +331,7 @@ class AcrcloudSpringboard:
                     return json.dumps({'response':invalidstat})
 
         except Exception as e:
-            self.dlog.logger.error('get status failed', exc_info=True)            
+            self.dlog.logger.error('Error@@Springboard.get_state', exc_info=True)            
 
         return json.dumps({'response':invalidstat})
 
@@ -367,7 +363,7 @@ class AcrcloudSpringboard:
             self.mainQueue.put(('stop', ''))
             return 'STORED'
         except Exception as e:
-            self.dlog.logger.error('stop failed', exc_info=True)
+            self.dlog.logger.error('Error@Springboard.stop_stream', exc_info=True)
         return 'NOT_STORED'
     
 class AcrcloudMonitor:
@@ -450,7 +446,7 @@ class AcrcloudMonitor:
                 self.addMonitor(jsoninfo)
                 time.sleep(1)
         except Exception as e:
-            self.dlog.logger.error('Error@startMonitor', exc_info=True)
+            self.dlog.logger.error('Error@AcrcloudMonitor.startMonitor', exc_info=True)
         
     def addMonitor(self, jsoninfo):
         try:
@@ -469,8 +465,8 @@ class AcrcloudMonitor:
                     self.dlog.logger.warn('ADD Monitor ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
                     return True
         except Exception as e:
-            self.dlog.logger.error('ADD Monitor Error:', exc_info=True)
-        self.dlog.logger.error('ADD Monitor Failed ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
+            self.dlog.logger.error('Error@AcrcloudMonitor.ADD Monitor Error:', exc_info=True)
+        self.dlog.logger.error('Error@AcrcloudMonitor.ADD Monitor Failed ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
         return False
 
     def delMonitor(self, jsoninfo):
@@ -486,8 +482,8 @@ class AcrcloudMonitor:
                 self.dlog.logger.warn('DEL Monitor ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
                 return True
         except Exception as e:
-            self.dlog.logger.error('Del Monitor Error:', exc_info=True)
-        self.dlog.logger.error('Del Monitor Failed ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
+            self.dlog.logger.error('Error@AcrcloudMonitor.Del Monitor Error:', exc_info=True)
+        self.dlog.logger.error('Error@AcrcloudMonitor.Del Monitor Failed ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
         return False
 
     def delAllM(self):
@@ -525,8 +521,8 @@ class AcrcloudMonitor:
                             self.dlog.logger.warn('Restart Monitor ({0}, {1}).'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
                             return True
         except Exception as e:
-            self.dlog.logger.error('Restart Monitor Error:', exc_info=True)
-        self.dlog.logger.error('Restart Monitor Failed ({0}, {1}).'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
+            self.dlog.logger.error('Error@AcrcloudMonitor.Restart Monitor Error:', exc_info=True)
+        self.dlog.logger.error('Erro@AcrcloudMonitor.Restart Monitor Failed ({0}, {1}).'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
         return False
 
     def refresh(self):
@@ -534,19 +530,19 @@ class AcrcloudMonitor:
             for stream_id in self.shareMonitorDict.keys():
                 jsoninfo, createTime, value = self.shareMonitorDict[stream_id]
                 if value == 1:
-                    self.dlog.logger.warn('Warn@refresh.stream: {0} - Update'.format(jsoninfo.get('stream_id','')))
+                    self.dlog.logger.warn('Warn@AcrcloudMonitor.refresh.stream: {0} - Update'.format(jsoninfo.get('stream_id','')))
                     self.delMonitor(jsoninfo)
                     self.addMonitor(jsoninfo)
                 elif value == 2:
-                    self.dlog.logger.warn('Warn@refresh.stream: {0} - New Add'.format(jsoninfo.get('stream_id','')))
+                    self.dlog.logger.warn('Warn@AcrcloudMonitor.refresh.stream: {0} - New Add'.format(jsoninfo.get('stream_id','')))
                     self.addMonitor(jsoninfo)
                 elif value == 3:
-                    self.dlog.logger.warn('Warn@refresh.stream: {0} - Delete'.format(jsoninfo.get('stream_id','')))
+                    self.dlog.logger.warn('Warn@AcrcloudMonitor.refresh.stream: {0} - Delete'.format(jsoninfo.get('stream_id','')))
                     self.delMonitor(jsoninfo)
                     del self.shareMonitorDict[stream_id]
                 time.sleep(1)
         except Exception as e:
-            self.dlog.logger.error('Refresh Monitor Error:', exc_info=True)
+            self.dlog.logger.error('Error@AcrcloudMonitor.Refresh Monitor Error:', exc_info=True)
 
     def pauseM(self, jsoninfo):
         try:
@@ -559,8 +555,8 @@ class AcrcloudMonitor:
                     self.dlog.logger.warn('PAUSE Monitor ({0}, {1}).'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
                     return True
         except Exception as e:
-            self.dlog.logger.error('PAUSE Monitor Error:', exc_info=True)
-        self.dlog.logger.error('PAUSE Monitor Failed ({0}, {1}).'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
+            self.dlog.logger.error('Error@AcrcloudMonitor.PAUSE Monitor Error:', exc_info=True)
+        self.dlog.logger.error('Error@AcrcloudMonitor.PAUSE Monitor Failed ({0}, {1}).'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
         return False
             
     def doIt(self, cmd, info):
@@ -592,9 +588,7 @@ class AcrcloudMonitor:
     def stop(self):
         self.delAllM()
         self.dlog.logger.warn('Warn@Acrcloud_Manager.DelAllMontirs_Success')
-        self.dlog.logger.warn('recognize MainQueue put')
         self.recMainQueue.put(('stop',''))
-        self.dlog.logger.warn('result MainQueue put')
         self.resMainQueue.put(('stop',''))
         self._running = False
         self.dlog.logger.warn('Warn@Acrcloud_Manager_Stop')
