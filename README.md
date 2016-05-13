@@ -1,13 +1,21 @@
-# ACRCloud Local Monitoring Service
+# Broadcast Monitoring - ACRCloud Local Service
 
-# Overview
-Local Monitoring Services is used to monitor live radio streams in your local server.
+## Overview
+  [ACRCloud](https://www.acrcloud.com/) provides [Automatic Content Recognition](https://www.acrcloud.com/docs/introduction/automatic-content-recognition/) services for [Audio Fingerprinting](https://www.acrcloud.com/docs/introduction/audio-fingerprinting/) based applications such as **[Audio Recognition](https://www.acrcloud.com/music-recognition)** (supports music, video, ads for both online and offline), **[Broadcast Monitoring](https://www.acrcloud.com/broadcast-monitoring)**, **[Second Screen](https://www.acrcloud.com/second-screen-synchronization)**, **[Copyright Protection](https://www.acrcloud.com/copyright-protection-de-duplication)** and etc.<br>
+  
+Local **Bradcast Monitoring** System is used to monitor live radio streams on your own local server. [Learn More](https://www.acrcloud.com/docs/acrcloud-services/for-pc-server/radio-airplay-monitoring-music/#server-location)
 
-# Requirements
+## Requirements
 * Python 2.7
 * Works on Linux
+* Follow one of the tutorials to create a project and get your host, access_key and access_secret.
 
-# How To Use
+ * [Broadcast Monitoring for Music](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-music/)
+ 
+ * [Broadcast Monitoring for Custom Content](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-custom-content/)
+
+
+## How To Use
 1. You should register an account on the [ACRCloud platform](https://console.acrcloud.com/), and create a [Broadcast Monitoring project](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-music/) with local monitoring type, you will get access_key and access_secret, then add your live radio streams in your project.
 2. Clone the code in your local server.
 3. Install MySQL, import acrcloud_database.sql to your mysql server. `$mysql -uroot -p < acrcloud_database.sql`.
