@@ -796,7 +796,7 @@ class Backup:
 
         data = None
         if isCustom:
-            data = self._result_filter.delay_deal_custom(old_data)
+            data = self._result_filter.deal_delay_custom(old_data)
         else:
             data = self._result_filter.deal_delay_history(old_data)
         if data is None:
