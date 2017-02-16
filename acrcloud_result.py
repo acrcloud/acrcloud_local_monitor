@@ -735,9 +735,9 @@ class Backup:
 
         data = None
         if isCustom:
-            data = self._result_filter.deal_real_custom(old_data)
+            data, is_new = self._result_filter.deal_real_custom(old_data)
         else:
-            data = self._result_filter.deal_real_history(old_data)
+            data, is_new = self._result_filter.deal_real_history(old_data)
         if data is None:
             return False
 
@@ -766,7 +766,7 @@ class Backup:
             self._redis_map[redis_name]['title'] = title
             self._redis_map[redis_name]['info'] = json.dumps(data)
 
-        if redis_title != title and NORESULT != title:
+        if is_new and NORESULT != title:
             result = data.get('result', {})
             if result and filter_chinese:
                 result = self.filter_chinese(stream_id, result)
