@@ -694,7 +694,7 @@ class Backup:
                              passwd=db_config["passwd"],
                              dbname=db_config["db"])
         self._log_dir = self._config["log"]["dir"]
-        self._result_filter = ResultFilter(self.dlog)
+        self._result_filter = ResultFilter(self.dlog, self._log_dir)
         self._tools_lan = tools_language.tools_language()
 
     def filter_chinese(self, stream_id, result):
