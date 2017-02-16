@@ -84,58 +84,6 @@ class ResultFilter:
         self._delay_list_max_num = 30
         self._delay_list_threshold = 70#self._delay_list_max_num*3
         self._recovery_interval = 24*60*60 #只恢复24小时之内的备份数据
-        self._backups_file = 'result_filter_backups.lst'
-        self.data_recovery()
-
-    def data_backups(self):
-        try:
-            backups_dict = {}
-            backups_dict['history'] = self._real_music
-            backups_dict['history_custom'] = self._real_custom
-            backups_dict['delay_music'] = self._delay_music
-            backups_dict['delay_custom'] = self._delay_custom
-            backups_dict['timestamp'] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            backups_file_path = os.path.join(self._log_dir, self._backups_file)
-            if not os.path.exists(self._log_dir):
-                os.makedirs(self._log_dir)
-            with open(backups_file_path, 'wb') as wfile:
-                wfile.write(json.dumps(backups_dict))
-            self._dlog.logger.warn("Result_Filter_Backups_Success!")
-        except Exception as e:
-            self._dlog.logger.error("Error@data_backups", exc_info=True)
-
-    def data_recovery(self):
-        try:
-            backups_file_path = os.path.join(self._log_dir, self._backups_file)
-            if os.path.exists(backups_file_path):
-                with open(backups_file_path, 'rb') as rfile:
-                    backups_info = rfile.read()
-                if backups_info:
-                    backups_dict = json.loads(backups_info)
-                    backups_timestamp = backups_dict['timestamp']
-                    backups_timestamp_obj = datetime.datetime.strptime(backups_timestamp, '%Y-%m-%d %H:%M:%S')
-                    now_timestamp = datetime.datetime.now()
-                    if (now_timestamp - backups_timestamp_obj).seconds <= self._recovery_interval:
-                        self._real_music = backups_dict['history']
-                        self._real_custom = backups_dict['history_custom']
-                        self._delay_music = backups_dict['delay_music']
-                        self._delay_custom = backups_dict['delay_custom']
-                        self._dlog.logger.warn("Result_Filter_Recovery_Success!")
-        except Exception as e:
-            self._dlog.logger.error("Error@data_recovery", exc_info=True)
-
-    def clean_buf(self, stream_id):
-        try:
-            if stream_id in self._real_music:
-                del self._real_music[stream_id]
-            if stream_id in self._real_custom:
-                del self._real_custom[stream_id]
-            if stream_id in self._delay_music:
-                del self._delay_music[stream_id]
-            if stream_id in self._delay_custom:
-                del self._delay_custom[stream_id]
-        except Exception as e:
-            self._dlog.logger.error("Error@clean_buf", exc_info=True)
 
     def get_mutil_result_title(self, data, itype='music', isize = 1):
         ret_list = []
