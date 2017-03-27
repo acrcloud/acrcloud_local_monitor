@@ -267,11 +267,11 @@ class ResultFilter:
             mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
         else:
             mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
-        mix_len = int(math.ceil(mix_len))
+        mix_len = int(math.ceil(mix_len)) + 1
 
-        played_duration = self.get_duration_accurate(end_data, begin_data, itype)
-        title = self.get_mutil_result_title(begin_data, itype, 1)[0]
-        self._dlog.logger.error("Timestamp:{11}, Title:{0},  played_d:{1}, db_d:{2}, sample_d:{3}, mix_d:{4}, begin_db:{5}, end_db:{6}, begin_sample:{7}, end_sample:{8}, isize:{9}, mon_len:{10}, itype:{11}".format(title, played_duration, db_len, sample_len, mix_len, begin_db_offset, end_db_offset, begin_sample_offset, end_sample_offset, isize, monitor_len, accurate_begin_timestamp, itype))
+        #played_duration = self.get_duration_accurate(end_data, begin_data, itype)
+        #title = self.get_mutil_result_title(begin_data, itype, 1)[0]
+        #self._dlog.logger.error("Timestamp:{11}, Title:{0},  played_d:{1}, db_d:{2}, sample_d:{3}, mix_d:{4}, begin_db:{5}, end_db:{6}, begin_sample:{7}, end_sample:{8}, isize:{9}, mon_len:{10}, itype:{11}".format(title, played_duration, db_len, sample_len, mix_len, begin_db_offset, end_db_offset, begin_sample_offset, end_sample_offset, isize, monitor_len, accurate_begin_timestamp, itype))
         return sample_len, db_len, mix_len, accurate_begin_timestamp
 
     def judge_zero_item_contain_current_result(self, ret_sim_title, zero_data, itype="music"):
