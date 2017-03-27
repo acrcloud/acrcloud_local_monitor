@@ -2,6 +2,7 @@
 #-*- coding:utf-8 -*-
 
 import sys
+import math
 import json
 import copy
 import time
@@ -13,15 +14,15 @@ import traceback
 import tools_str_sim
 import tools_language
 import multiprocessing
+from dateutil.relativedelta import *
+
 reload(sys)
 sys.setdefaultencoding("utf8")
 
 sys.path.append("../")
 import acrcloud_logger
 
-
 NORESULT = "noResult"
-
 
 class Acrcloud_Result:
     def __init__(self, mainqueue, resultQueue, config):
@@ -110,6 +111,9 @@ class ResultFilter:
                     if 'metadata' in json_res and 'custom_files' in json_res['metadata']:
                         for item in json_res['metadata']['custom_files']:
                             ret_list.append(item['title'])
+                            index += 1
+                            if index >= isize:
+                                break
         except Exception as e:
             self._dlog.logger.error("Error@get_mutil_result_title", exc_info=True)
             self._dlog.logger.error("Error_Data: {0}".format(data))
@@ -140,6 +144,9 @@ class ResultFilter:
                     if 'metadata' in json_res and 'custom_files' in json_res['metadata']:
                         for item in json_res['metadata']['custom_files']:
                             ret_list.append(item['acrid'])
+                            index += 1
+                            if index >= isize:
+                                break
         except Exception as e:
             self._dlog.logger.error("Error@get_mutil_result_acrid", exc_info=True)
             self._dlog.logger.error("Error_Data: {0}".format(json.dumps(result)))
@@ -188,9 +195,36 @@ class ResultFilter:
             elif itype == 'custom':
                 play_offset_ms = result['metadata']['custom_files'][0]['play_offset_ms']
         except Exception as e:
-            print "Error@Get_Play_Offset, error_data: {0}, {1}".format(itype, data)
-            traceback.print_exc()
+            self._dlog.logger.error("Error@Get_Play_Offset, error_data: {0}, {1}".format(itype, data), exc_info=True)
         return play_offset_ms/1000.0
+
+    def get_db_play_offset(self, data, offset_type="begin", itype='music'):
+        """
+        itype : music or custom
+        offset_type : begin or end offset
+        """
+        try:
+            if offset_type not in ['begin', 'end']:
+                self._dlog.logger.error("Error@Get_DB_Play_Offset.offset_type({0}) error".format(offset_type))
+                return (None, self.get_play_offset(data, itype)) #if offset_type error, return play_offset_ms
+
+            db_offset_key = "db_{0}_time_offset_ms".format(offset_type)
+            sample_offset_key = "sample_{0}_time_offset_ms".format(offset_type)
+
+            db_play_offset_ms = 0 #单位ms
+            sample_play_offset_ms = 0
+            result = data['result']
+            if result['status']['code'] == 1001:
+                return 0
+            if itype == 'music':
+                db_play_offset_ms = result['metadata']['music'][0][db_offset_key]
+                sample_play_offset_ms = result['metadata']['music'][0][sample_offset_key]
+            elif itype == 'custom':
+                db_play_offset_ms = result['metadata']['custom_files'][0][db_offset_key]
+                sample_play_offset_ms = result['metadata']['custom_files'][0][sample_offset_key]
+        except Exception as e:
+            self._dlog.logger.error("Error@Get_DB_Play_Offset, error_data: {0}, {1}, {2}".format(offset_type, itype, data), exc_info=True)
+        return (int(sample_play_offset_ms)/1000.0, int(db_play_offset_ms)/1000.0)
 
     def get_duration(self, end_timestamp, start_timestamp):
         end = datetime.datetime.strptime(end_timestamp, '%Y-%m-%d %H:%M:%S')
@@ -207,6 +241,94 @@ class ResultFilter:
         else:
             start_play_offset = start_play_offset - (monitor_len/2)
         return int(round(end_play_offset - start_play_offset))
+
+    def get_duration_accurate_use_db_offset(self, end_data, begin_data, isize, itype='music'):
+        begin_timestamp = datetime.datetime.strptime(begin_data['timestamp'], "%Y-%m-%d %H:%M:%S")
+
+        monitor_len = end_data.get('monitor_seconds', 10)
+
+        end_sample_offset, end_db_offset = self.get_db_play_offset(end_data, 'end', itype)
+        begin_sample_offset, begin_db_offset = self.get_db_play_offset(begin_data, 'begin', itype)
+
+        accurate_begin_timestamp = (begin_timestamp + relativedelta(seconds=int(float(begin_sample_offset)))).strftime("%Y-%m-%d %H:%M:%S")
+
+        db_len = int(round(end_db_offset - begin_db_offset))
+        sample_len = int(round(end_sample_offset - begin_sample_offset + (isize-1)*monitor_len))
+
+        mix_len = 0
+        if int(begin_sample_offset) == 0 and int(begin_db_offset) == 0:
+            mix_len = (isize-1)*monitor_len + end_sample_offset
+        elif int(begin_sample_offset) == 0:
+            if begin_db_offset <= monitor_len:
+                mix_len = begin_db_offset + (isize-1)*monitor_len + end_sample_offset
+            else:
+                mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
+        elif int(begin_db_offset) == 0:
+            mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
+        else:
+            mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
+        mix_len = int(math.ceil(mix_len))
+
+        played_duration = self.get_duration_accurate(end_data, begin_data, itype)
+        title = self.get_mutil_result_title(begin_data, itype, 1)[0]
+        self._dlog.logger.error("Timestamp:{11}, Title:{0},  played_d:{1}, db_d:{2}, sample_d:{3}, mix_d:{4}, begin_db:{5}, end_db:{6}, begin_sample:{7}, end_sample:{8}, isize:{9}, mon_len:{10}, itype:{11}".format(title, played_duration, db_len, sample_len, mix_len, begin_db_offset, end_db_offset, begin_sample_offset, end_sample_offset, isize, monitor_len, accurate_begin_timestamp, itype))
+        return sample_len, db_len, mix_len, accurate_begin_timestamp
+
+    def judge_zero_item_contain_current_result(self, ret_sim_title, zero_data, itype="music"):
+        """
+        itype: music => title is track name
+        itype: custom => title is acrid
+        """
+        try:
+            is_contain = False
+            if itype == "music":
+                zero_title_list = self.get_mutil_result_title(zero_data, 'music', 5)
+            elif itype == "custom":
+                zero_title_list = self.get_mutil_result_acrid(zero_data, 'custom', 5)
+            else:
+                return is_contain
+
+            for ztitle in zero_title_list:
+                if ztitle == NORESULT:
+                    break
+                sim_zero_title = self.tryStrSub(ztitle)[0] if itype == "music" else ztitle
+                #print "zero sim title: {0} -- {1}".format(ret_sim_title, sim_zero_title)
+                if sim_zero_title == ret_sim_title:
+                    is_contain = True
+                    self.swap_position(ztitle, zero_data, itype)
+                    break
+        except Exception as e:
+            self._dlog.logger.error("Error@judge_zero_item_contain_current_result", exc_info=True)
+        return is_contain
+
+    def judge_latter_item_contain_current_result(self, ret_sim_title, latter_data, itype="music"):
+        """
+        itype: music => title is track name
+        itype: custom => title is acrid
+        """
+        try:
+            is_contain = False
+            latter_data_swaped = None
+            if itype == "music":
+                latter_title_list = self.get_mutil_result_title(latter_data, 'music', 5)
+            elif itype == "custom":
+                latter_title_list = self.get_mutil_result_acrid(latter_data, 'custom', 5)
+            else:
+                return is_contain, latter_data_swaped
+
+            for ltitle in latter_title_list:
+                if ltitle == NORESULT:
+                    break
+                sim_latter_title = self.tryStrSub(ltitle)[0] if itype == "music" else ltitle
+                #print "latter sim title: {0} -- {1}".format(ret_sim_title, sim_latter_title)
+                if sim_latter_title == ret_sim_title:
+                    is_contain = True
+                    latter_data_swaped = copy.deepcopy(latter_data)
+                    self.swap_position(ltitle, latter_data_swaped, itype)
+                    break
+        except Exception as e:
+            self._dlog.logger.error("Error@judge_latter_item_contain_current_result", exc_info=True)
+        return is_contain, latter_data_swaped
 
     def real_check_title_custom(self, stream_id, title):
         now_timestamp = datetime.datetime.utcnow()
@@ -332,7 +454,61 @@ class ResultFilter:
         else:
             return None
 
+    def compute_played_duration(self, history_data, start_index, end_index, judge_zero_or_latter=True, itype="music"):
+        retdata = history_data[start_index][-1]
+
+        if itype == "music":
+            ret_title = self.get_mutil_result_title(retdata, 'music', 1)[0]
+            ret_sim_title = history_data[start_index][1]
+        elif itype == "custom":
+            ret_title = self.get_mutil_result_acrid(retdata, 'custom', 1)[0]
+            ret_sim_title = ret_title
+
+        #如果开始的index为1，判断第0个结果是否包含当前处理歌曲
+        if judge_zero_or_latter and start_index == 1:
+            if self.judge_zero_item_contain_current_result(ret_sim_title, history_data[0][-1], itype):
+                #self._dlog.logger.error("Title: {0}, pre monitor_len has this title!!!".format(ret_title))
+                start_index = 0
+
+        #判断后一个结果是否包含当前处理歌曲
+        is_contain = False
+        latter_data_swaped = None
+        if judge_zero_or_latter and (end_index + 1 <= len(history_data) - 1):
+            is_contain, latter_data_swaped = self.judge_latter_item_contain_current_result(ret_sim_title, history_data[end_index+1][-1], itype)
+
+        if itype == "music":
+            start_timestamp = history_data[start_index][2]
+            end_timestamp = history_data[end_index][2]
+            start_data = history_data[start_index][3]
+            end_data = history_data[end_index][3]
+        else:
+            start_timestamp = history_data[start_index][1]
+            end_timestamp = history_data[end_index][1]
+            start_data = history_data[start_index][2]
+            end_data = history_data[end_index][2]
+
+        duration = self.get_duration(end_timestamp, start_timestamp)
+        duration_accurate = self.get_duration_accurate(end_data, start_data, itype)
+        isize = end_index - start_index + 1
+        if is_contain:
+            end_data = latter_data_swaped
+            isize += 1
+            #self._dlog.logger.error("Title: {0}, latter monitor_len has this title!!!".format(ret_title))
+
+        sample_duraion, db_duration, mix_duration, accurate_timestamp_utc = self.get_duration_accurate_use_db_offset(end_data, start_data, isize, itype)
+
+        ret_dict = {
+            "duration" : duration,
+            "duration_accurate" : duration_accurate,
+            "sample_duration" : sample_duraion,
+            "db_duration" : db_duration,
+            "mix_duration" : mix_duration,
+            "accurate_timestamp_utc" : accurate_timestamp_utc,
+        }
+        return ret_dict
+
     def runDelayX(self, stream_id):
+        #history_data[0] 为上一个结果的最后一个片段 or noResult
         history_data = self._delay_music[stream_id]
 
         if len(history_data) >= self._delay_list_threshold:
@@ -344,6 +520,8 @@ class ResultFilter:
         sim_title_count = {}
         #sim_title_list = [ item[1] for item in history_data ]
         for index, item in enumerate(history_data):
+            if index == 0:
+                continue
             if item[1] not in sim_title_set:
                 sim_title_count[item[1]] = [1, [index, ]]
                 sim_title_set.add(item[1])
@@ -362,6 +540,8 @@ class ResultFilter:
         order_key_list = []
         order_set = set()
         for index, item in enumerate(history_data):
+            if index == 0:
+                continue
             if item[1] == NORESULT:
                 del_index.add(index)
                 continue
@@ -384,8 +564,7 @@ class ResultFilter:
                 del_index.add(index)
 
         retdata = None
-        duration = 0
-        duration_accurate = 0
+        duration_dict = None
         another_del_index = set()
 
         if len(order_key_list) == 3:
@@ -402,17 +581,20 @@ class ResultFilter:
                 else:
                     xflag = 2
             if xflag == 0:
-                retdata = history_data[first_item[1][0]][-1]
-                duration = self.get_duration(history_data[first_item[1][-1]][2], history_data[first_item[1][0]][2])
-                duration_accurate = self.get_duration_accurate(history_data[first_item[1][-1]][3], history_data[first_item[1][0]][3])
+                start_index = first_item[1][0]
+                end_index = first_item[1][-1]
+                retdata = history_data[start_index][-1]
+                duration_dict =  self.compute_played_duration(history_data, start_index, end_index)
+
                 another_del_index = set(first_item[1])
             elif xflag == 1:
                 lucky_item = first_item if first_item[0] >= second_item[0] else second_item
                 retdata = history_data[lucky_item[1][0]][-1]
                 start_index = first_item[1][0] if first_item[1][0] < second_item[1][0] else second_item[1][0]
                 end_index = first_item[1][-1] if first_item[1][-1] > second_item[1][-1] else second_item[1][-1]
-                duration = self.get_duration(history_data[end_index][2], history_data[start_index][2])
-                duration_accurate = self.get_duration_accurate(history_data[end_index][3], history_data[start_index][3])
+
+                duration_dict =  self.compute_played_duration(history_data, start_index, end_index, False)
+
                 another_del_index = set(first_item[1])
                 another_del_index = another_del_index.union(set(second_item[1]))
             elif xflag == 2:
@@ -421,8 +603,9 @@ class ResultFilter:
                 retdata = history_data[lucky_item[1][0]][-1]
                 start_index = min(first_item[1][0], second_item[1][0], third_item[1][0])
                 end_index = max(first_item[1][-1], second_item[1][-1], third_item[1][-1])
-                duration = self.get_duration(history_data[end_index][2], history_data[start_index][2])
-                duration_accurate = self.get_duration_accurate(history_data[end_index][3], history_data[start_index][3])
+
+                duration_dict =  self.compute_played_duration(history_data, start_index, end_index, False)
+
                 another_del_index = set(first_item[1])
                 another_del_index = another_del_index.union(set(second_item[1]))
                 another_del_index = another_del_index.union(set(third_item[1]))
@@ -430,33 +613,42 @@ class ResultFilter:
             first_item = sim_title_count[order_key_list[0]]
             second_item = sim_title_count[order_key_list[1]]
             if first_item[1][-1] < second_item[1][0]:
-                retdata = history_data[first_item[1][0]][-1]
                 start_index = first_item[1][0]
                 end_index = first_item[1][-1]
-                duration = self.get_duration(history_data[end_index][2], history_data[start_index][2])
-                duration_accurate = self.get_duration_accurate(history_data[end_index][3], history_data[start_index][3], 'music')
+                retdata = history_data[start_index][-1]
+
+                duration_dict =  self.compute_played_duration(history_data, start_index, end_index)
+
                 another_del_index = set(first_item[1])
             else:
                 lucky_item = first_item if first_item[0] >= second_item[0] else second_item
                 retdata = history_data[lucky_item[1][0]][-1]
                 start_index = min(first_item[1][0], second_item[1][0])
                 end_index = max(first_item[1][-1], second_item[1][-1])
-                duration = self.get_duration(history_data[end_index][2], history_data[start_index][2])
-                duration_accurate = self.get_duration_accurate(history_data[end_index][3], history_data[start_index][3])
+
+                duration_dict =  self.compute_played_duration(history_data, start_index, end_index, False)
+
                 another_del_index = set(first_item[1])
                 another_del_index = another_del_index.union(set(second_item[1]))
         elif len(order_key_list) == 1:
-            retdata = history_data[sim_title_count[order_key_list[0]][1][0]][-1]
             start_index = sim_title_count[order_key_list[0]][1][0]
             end_index = sim_title_count[order_key_list[0]][1][-1]
-            duration = self.get_duration(history_data[end_index][2], history_data[start_index][2])
-            duration_accurate = self.get_duration_accurate(history_data[end_index][3], history_data[start_index][3])
+            retdata = history_data[start_index][-1]
+
+            duration_dict =  self.compute_played_duration(history_data, start_index, end_index)
+
             another_del_index = set(sim_title_count[order_key_list[0]][1])
 
         if another_del_index and max(another_del_index) < len(history_data)-1:
             del_index = del_index.union(another_del_index)
         else:
             retdata = None
+
+        #将0加入删除集合
+        del_index.add(0)
+        #删除列表中的最大index的那个片段不删，放到下次识别的history_data[0]
+        max_del_index = max(del_index)
+        del_index.remove(max_del_index)
 
         after_del_history_data = []
         for index in range(len(history_data)):
@@ -482,22 +674,15 @@ class ResultFilter:
                 self._delay_music_last_result[stream_id] = (ret_title, ret_timestamp)
 
         if retdata:
-            monitor_seconds = int(retdata.get('monitor_seconds', 10))
-            #print "Duration: {0}, Duration_accruate: {1} ({0}-{2}<=x<={0}+{2})".format(duration, duration_accurate, monitor_seconds)
-            if duration_accurate >= (duration - monitor_seconds) and duration_accurate <= (duration + monitor_seconds):
-                retdata['result']['metadata']['played_duration'] = duration_accurate
-                #print "Duration  set: duration_accurate: {0}".format(duration_accurate)
-            elif duration_accurate > (duration+monitor_seconds):
-                if duration_accurate < (duration + monitor_seconds*2):
-                    diff_tmp = (duration + monitor_seconds*2 - duration_accurate)/2
-                    retdata['result']['metadata']['played_duration'] = duration + monitor_seconds + diff_tmp
-                    #print "Duration set: duraion+monitor_seconds+diff_tmp: {0}".format(duration+monitor_seconds+diff_tmp)
-                else:
-                    retdata['result']['metadata']['played_duration'] = duration + monitor_seconds
-                    #print "Duration set: duraion+monitor_seconds: {0}".format(duration + monitor_seconds)
-            else:
-                retdata['result']['metadata']['played_duration'] = duration + monitor_seconds/2
-                #print "Duration set: duraion+monitor_seconds/2: {0}".format(duration + monitor_seconds/2)
+            duration = duration_dict["duration"]
+            duration_accurate = duration_dict["duration_accurate"]
+            sample_duration = duration_dict["sample_duration"]
+            db_duration = duration_dict["db_duration"]
+            mix_duration = duration_dict["mix_duration"]
+            accurate_timestamp_utc = duration_dict["accurate_timestamp_utc"]
+
+            retdata['result']['metadata']['played_duration'] = mix_duration
+            retdata['result']['metadata']['timestamp_utc'] = accurate_timestamp_utc
 
         return retdata
 
@@ -538,7 +723,7 @@ class ResultFilter:
             stream_id = data.get("stream_id")
             timestamp = data.get("timestamp")
             #title_list = self.get_mutil_result_title(data, 'custom')
-            title_list = self.get_mutil_result_acrid(data, 'custom')
+            title_list = self.get_mutil_result_acrid(data, 'custom', 1)
             if stream_id not in self._delay_custom:
                 self._delay_custom[stream_id] = [(title_list, timestamp, data)]
             else:
@@ -565,7 +750,8 @@ class ResultFilter:
         deal_title_map = {} #key:title, value:{'count':0, 'index_list':[]}
         break_index = 0
 
-        for index, item in enumerate(history_data):
+        for index, item in enumerate(history_data[1:]):
+            index += 1
             title_list, timestamp, data = item
             if index!=0:
                 flag_first = True
@@ -595,27 +781,9 @@ class ResultFilter:
                 deal_title_map[title]['count'] += 1
                 deal_title_map[title]['index_list'].append(index)
 
-
-        """
-        ########### Deal Custom Result ###########
-        ret_data = None
-        duration = 0
-        if break_index > 0 and deal_title_map:
-            sorted_title_list = sorted(deal_title_map.items(), key = lambda x:x[1]['count'], reverse = True)
-            ret_title = sorted_title_list[0][0]
-            ret_title_index_list = deal_title_map[ret_title]['index_list']
-            ret_data = history_data[min(ret_title_index_list)][2]
-            self.swap_position(ret_title, ret_data, 'custom')
-            index_range = set()
-            for title in deal_title_map:
-                index_range |= set(deal_title_map[title]['index_list'])
-            min_index = min(index_range)
-            max_index = max(index_range)
-            duration = self.get_duration(history_data[max_index][1], history_data[min_index][1])
-        """
-
         ########### New Deal Custom Result Add Count ###########
         ret_data = None
+        duration_dict = {}
         duration = 0
         if break_index > 0 and deal_title_map:
             tmp_count_map = {}
@@ -644,29 +812,21 @@ class ResultFilter:
                 index_range |= set(deal_title_map[title]['index_list'])
             min_index = min(index_range)
             max_index = max(index_range)
-            duration = self.get_duration(history_data[max_index][1], history_data[min_index][1])
-            duration_accurate = self.get_duration_accurate(history_data[max_index][2], history_data[min_index][2], 'custom')
+            duration_dict = self.compute_played_duration(history_data, min_index, max_index, True, "custom")
+
+            #duration = self.get_duration(history_data[max_index][1], history_data[min_index][1])
+            #duration_accurate = self.get_duration_accurate(history_data[max_index][2], history_data[min_index][2], 'custom')
 
         if ret_data:
-            monitor_seconds = int(ret_data.get('monitor_seconds', 10))
-            #print "Custom Duration: {0}, Duration_accruate: {1} ({0}-{2}<=x<={0}+{2})".format(duration, duration_accurate, monitor_seconds)
+            duration = duration_dict["duration"]
+            duration_accurate = duration_dict["duration_accurate"]
+            sample_duration = duration_dict["sample_duration"]
+            db_duration = duration_dict["db_duration"]
+            mix_duration = duration_dict["mix_duration"]
+            accurate_timestamp_utc = duration_dict["accurate_timestamp_utc"]
+            ret_data['result']['metadata']['played_duration'] = mix_duration
+            ret_data['result']['metadata']['timestamp_utc'] = accurate_timestamp_utc
 
-            if duration_accurate >= (duration - monitor_seconds) and duration_accurate <= (duration + monitor_seconds):
-                ret_data['result']['metadata']['played_duration'] = duration_accurate
-                #print "Custom Duration  set: duration_accurate: {0}".format(duration_accurate)
-            elif duration_accurate > (duration+monitor_seconds):
-                if duration_accurate < (duration + monitor_seconds*2):
-                    diff_tmp = (duration + monitor_seconds*2 - duration_accurate)/2
-                    ret_data['result']['metadata']['played_duration'] = duration + monitor_seconds + diff_tmp
-                    #print "Custom Duration set: duraion+monitor_seconds+diff_tmp: {0}".format(duration+monitor_seconds+diff_tmp)
-                else:
-                    ret_data['result']['metadata']['played_duration'] = duration + monitor_seconds
-                    #print "Custom Duration set: duraion+monitor_seconds: {0}".format(duration + monitor_seconds)
-            else:
-                ret_data['result']['metadata']['played_duration'] = duration + monitor_seconds/2
-                #print "Custom Duration set: duraion+monitor_seconds/2: {0}".format(duration + monitor_seconds/2)
-            #ret_data['result']['metadata']['played_duration'] = duration + 12
-            #self._dlog.logger.warn("Custom Play Duration: {0}".format(ret_data['result']['metadata']['played_duration']))
         ########### cut history_data #############
         if break_index>=0:
             cut_index = break_index
@@ -675,6 +835,8 @@ class ResultFilter:
                     cut_index = break_index + i + 1
                 else:
                     break
+            #此处减一是为了保留最后一个作为history_data[0],为下一个计算played_duration
+            cut_index = cut_index - 1 if cut_index >= 1 else cut_index
             history_data = history_data[cut_index:]
             self._delay_custom[stream_id] = history_data
         return ret_data
@@ -828,6 +990,12 @@ class Backup:
 
     def save_one(self, jsondata):
         try:
+            timestamp = jsondata['timestamp']
+            if jsondata['result']['status']['code'] != 0:
+                jsondata['result']['metadata'] = {'timestamp_utc':timestamp}
+            elif 'metadata' in jsondata['result']:
+                jsondata['result']['metadata']['timestamp_utc'] = timestamp
+
             ret = False
             if jsondata.get('delay') == 0 or jsondata.get('delay') == False:
                 custom_data = copy.deepcopy(jsondata)

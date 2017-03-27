@@ -65,8 +65,10 @@ class Acrcloud_Rec_Worker(threading.Thread):
                           "filter_chinese": int(self._shareDict.get("filter_chinese_"+stream_info[1], 1)),
                           "delay":int(self. _shareDict.get("delay_"+stream_info[1], 1)),
                           "record":self._shareDict.get("record_"+stream_info[1], [0,0,0]),
+                          "monitor_seconds":stream_info[5] + stream_info[8],
                           "pem_file":"",
                           "timestamp": stream_info[7]}
+                #print result
                 res = self._recognizer.recognize(stream_info[0],
                                                  stream_info[6][:stream_info[5]*16000],
                                                  "fingerprint",

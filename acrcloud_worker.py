@@ -62,7 +62,7 @@ class Worker_CollectData(threading.Thread):
         dsec = datetime.timedelta(seconds=monitor_seconds)
         nowtime = nowtime - dsec
         return nowtime.strftime('%Y-%m-%d %H:%M:%S')
-        
+
     def run(self):
         self._runing = True
         self._timeout_count = 0
@@ -78,7 +78,7 @@ class Worker_CollectData(threading.Thread):
                     timestamp = self.getTimestamp(self._monitor_length + self._monitor_interval)
                     self._recQueue.put((self._rec_host, self._stream_id, self._stream_url,
                                         self._access_key, self._access_secret,
-                                        self._monitor_length, self._cur_buffer, timestamp))
+                                        self._monitor_length, self._cur_buffer, timestamp, self._monitor_interval))
                     self._dlogger.info('MSG@Get_Stream_Buffer(Buffer Size: {0})'.format(len(self._cur_buffer)))
                     self._cur_buffer = ""
             except Exception as e:
@@ -87,8 +87,7 @@ class Worker_CollectData(threading.Thread):
 
     def stop(self):
         self._runing = False
-        
-            
+
 class Worker_DownloadStream(threading.Thread):
 
     def __init__(self, stream_url, workQueue, cmdQueue, downloadf, dlogger,
@@ -214,7 +213,7 @@ class Worker_DownloadStream(threading.Thread):
                 if response:
                     response.close()
         return ''
-            
+
     def callback(self, isvideo, buf):
         if self._isFirst:
             if isvideo == 1:
@@ -302,7 +301,7 @@ class Worker_DownloadStream(threading.Thread):
 
     def stop(self):
         self._Runing = False
-            
+
 class AcrcloudWorker:
 
     def __init__(self, info, mainqueue, recqueue, shareStatusDict, shareDict, config):
