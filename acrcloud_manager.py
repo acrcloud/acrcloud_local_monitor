@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-  @author johny
+  @author johnny
   @E-mail qiang@acrcloud.com
   @version v4-local
   @create 2016.03.08
@@ -36,7 +36,7 @@ class AcrcloudManager:
         self.client2id = {}
         self.id2client = {}
         self.initLog()
-        
+
     def initLog(self):
         self.colorfmt = "$MAGENTA%(asctime)s$RESET - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
         self.dlog = AcrcloudLogger('Client@Main', logging.INFO)
@@ -49,7 +49,7 @@ class AcrcloudManager:
         self.id2client[self.sockIndex] = client
         self.dlog.logger.info('New Client, ID: {0}'.format(self.sockIndex))
         self.sockIndex = self.sockIndex + 1
-    
+
     def delClient(self, client):
         if client in self.client2id:
             self.sockNum = self.sockNum - 1
@@ -57,18 +57,18 @@ class AcrcloudManager:
             del self.client2id[client]
             del self.id2client[_sockid]
             self.dlog.logger.info('Close Client, ID: {0}'.format(_sockid))
-    
+
     def getSockid(self, client):
         if client in self.client2id:
             return self.client2id[client]
         else:
             return None
-        
+
     def getClient(self, sockid):
         if sockid in self.id2client:
             return self.id2client[sockid]
         else:
-            return None    
+            return None
 
     def recData(self, recdata):
         datainfo = recdata[:-2].split('\r\n', 1)
@@ -119,6 +119,9 @@ class AcrcloudSpringboard:
         self.access_key = self.config['user']['access_key']
         self.access_secret = self.config['user']['access_secret']
         self.api_url = self.config['user']['api_url']
+        self.record = int(self.config['record']['record'])
+        self.record_before = int(self.config['record']['record_before'])
+        self.record_after = int(self.config['record']['record_after'])
         self.addkeys =['access_key','access_secret','rec_host','stream_id','stream_url',
                        'interval','monitor_length','monitor_timeout','rec_timeout']
         self.mainQueue = multiprocessing.Queue()
@@ -128,13 +131,13 @@ class AcrcloudSpringboard:
         self.initLog()
         self.initManager()
         self.initStreams()
-        
+
     def initLog(self):
         self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
         self.dlog = AcrcloudLogger('Acrcloud@Springboard', logging.INFO)
         if not self.dlog.addStreamHandler(self.colorfmt):
             sys.exit(1)
-        
+
     def initManager(self):
         try:
             self.manager_proc = multiprocessing.Process(target = self.manager,
@@ -155,7 +158,7 @@ class AcrcloudSpringboard:
         except Exception as e:
             self.dlog.logger.error('Error@Springboard:init manager failed, it will stop', exc_info=True)
             sys.exit(1)
-            
+
     def checkInfo(self, info):
         if len(info) >= 8:
             for key in self.addkeys:
@@ -192,7 +195,7 @@ class AcrcloudSpringboard:
                 if response:
                     response.close()
         return ''
-        
+
     def getStreamInfo(self, api_url, access_key):
         try:
             url = api_url.format(access_key)
@@ -201,7 +204,7 @@ class AcrcloudSpringboard:
             return json.dumps(streaminfo)
         except Exception as e:
             self.dlog.logger.error('Error@Springboard.getStreamInfo', exc_info=True)
-        
+
     def initStreams(self):
         try:
             stream_data = self.getStreamInfo(self.api_url, self.access_key)
@@ -214,8 +217,9 @@ class AcrcloudSpringboard:
                 createTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
                 self.shareMonitorDict[stream_id] = [jsoninfo, createTime, 0]
                 self.shareStatusDict[stream_id] = ['0#running', '2#unknow']
-                self.shareDict['filter_chinese_'+stream_id] = jsoninfo.get('filter_chinese', 1)
+                self.shareDict['filter_chinese_'+stream_id] = jsoninfo.get('filter_chinese', 0)
                 self.shareDict['delay_'+stream_id] = int(jsoninfo.get('delay', 1))
+                self.shareDict['record_'+stream_id] = [self.record, self.record_before, self.record_after]
                 self.dlog.logger.info('MSG@Springboard.initStreams.add one stream({0}) success'.format(stream_id))
             self.mainQueue.put(('heiheihei', ''))
         except Exception as e:
@@ -425,7 +429,7 @@ class AcrcloudMonitor:
             sys.exit(1)
         else:
             self.dlog.logger.warn('Warn@AcrcloudMonitor.init_result.success')
-            
+
     def checkInfo(self, info):
         if len(info) >= 8:
             for key in self.addkeys:

@@ -15,6 +15,7 @@ import tools_str_sim
 import tools_language
 import multiprocessing
 from dateutil.relativedelta import *
+from acrcloud_record import recordWorker
 
 reload(sys)
 sys.setdefaultencoding("utf8")
@@ -30,14 +31,27 @@ class Acrcloud_Result:
         self._log_dir = self._config['log']['dir']
         self._mainQueue = mainqueue
         self._resultQueue = resultQueue
+        self._recordQueue = multiprocessing.Queue()
         self.init_logger()
-        self.data_backup = Backup(self._config, self.dlog)
+        self.data_backup = Backup(self._config, self._recordQueue, self.dlog)
+        self.init_record()
         self.dlog.logger.warn("Warn@Acrcloud_Result Init Success!")
 
     def init_logger(self):
         self.dlog = acrcloud_logger.AcrcloudLogger('LocalResult')
         self.dlog.addFilehandler('local_result.log', logdir=self._log_dir)
         self.dlog.addStreamHandler()
+
+    def init_record(self):
+        try:
+            self.record_proc = multiprocessing.Process(target = recordWorker,
+                                                       args = (self._config, self._recordQueue))
+            self.record_proc.start()
+            if not self.record_proc.is_alive():
+                self.dlog.logger.error("Error@Acrcloud_Result.record worker run failed, exit")
+                sys.exit(1)
+        except Exception as e:
+            self.dlog.logger.error('Error@Acrcloud_Result.init_record', exc_info=True)
 
     def deal_result(self, resinfo):
         try:
@@ -269,6 +283,9 @@ class ResultFilter:
             mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
         mix_len = int(math.ceil(mix_len)) + 1
 
+        #played_duration = self.get_duration_accurate(end_data, begin_data, itype)
+        #title = self.get_mutil_result_title(begin_data, itype, 1)[0]
+        #self._dlog.logger.error("Timestamp:{11}, Title:{0},  played_d:{1}, db_d:{2}, sample_d:{3}, mix_d:{4}, begin_db:{5}, end_db:{6}, begin_sample:{7}, end_sample:{8}, isize:{9}, mon_len:{10}, itype:{11}".format(title, played_duration, db_len, sample_len, mix_len, begin_db_offset, end_db_offset, begin_sample_offset, end_sample_offset, isize, monitor_len, accurate_begin_timestamp, itype))
         return sample_len, db_len, mix_len, accurate_begin_timestamp
 
     def judge_zero_item_contain_current_result(self, ret_sim_title, zero_data, itype="music"):
@@ -345,6 +362,7 @@ class ResultFilter:
                 if (now_timestamp - his_time_obj).seconds <= self._real_custom_valid_interval:
                     return True
             if title == NORESULT:
+                #noresult只比较第一个历史结果
                 break
 
         return False
@@ -460,10 +478,13 @@ class ResultFilter:
             ret_title = self.get_mutil_result_acrid(retdata, 'custom', 1)[0]
             ret_sim_title = ret_title
 
+        #如果开始的index为1，判断第0个结果是否包含当前处理歌曲
         if judge_zero_or_latter and start_index == 1:
             if self.judge_zero_item_contain_current_result(ret_sim_title, history_data[0][-1], itype):
+                #self._dlog.logger.error("Title: {0}, pre monitor_len has this title!!!".format(ret_title))
                 start_index = 0
 
+        #判断后一个结果是否包含当前处理歌曲
         is_contain = False
         latter_data_swaped = None
         if judge_zero_or_latter and (end_index + 1 <= len(history_data) - 1):
@@ -486,6 +507,7 @@ class ResultFilter:
         if is_contain:
             end_data = latter_data_swaped
             isize += 1
+            #self._dlog.logger.error("Title: {0}, latter monitor_len has this title!!!".format(ret_title))
 
         sample_duraion, db_duration, mix_duration, accurate_timestamp_utc = self.get_duration_accurate_use_db_offset(end_data, start_data, isize, itype)
 
@@ -500,6 +522,7 @@ class ResultFilter:
         return ret_dict
 
     def runDelayX(self, stream_id):
+        #history_data[0] 为上一个结果的最后一个片段 or noResult
         history_data = self._delay_music[stream_id]
 
         if len(history_data) >= self._delay_list_threshold:
@@ -509,6 +532,7 @@ class ResultFilter:
 
         sim_title_set = set()
         sim_title_count = {}
+        #sim_title_list = [ item[1] for item in history_data ]
         for index, item in enumerate(history_data):
             if index == 0:
                 continue
@@ -520,6 +544,7 @@ class ResultFilter:
                 sim_title_count[item[1]][1].append(index)
         sim_title_count_single_index = [sim_title_count[key][1][0] for key in sim_title_count if sim_title_count[key][0] == 1]
 
+        #如果最后一个为单数的则将起从单数列表中删除
         if len(history_data)-1 in sim_title_count_single_index:
             sim_title_count_single_index.remove(len(history_data)-1)
 
@@ -560,6 +585,7 @@ class ResultFilter:
             first_item = sim_title_count[order_key_list[0]]
             second_item = sim_title_count[order_key_list[1]]
             third_item = sim_title_count[order_key_list[2]]
+            #判断这三者在时间上是否有交集，只是判断第一个和后两个是否有交集
             xflag = 0 #0第一个和后两个无交集，1第一个只和第二个有交集，2第一个和后两个都有交集
             if first_item[1][-1] < second_item[1][0]:
                 xflag = 0 if first_item[1][-1] < third_item[1][0] else 2
@@ -632,7 +658,9 @@ class ResultFilter:
         else:
             retdata = None
 
+        #将0加入删除集合
         del_index.add(0)
+        #删除列表中的最大index的那个片段不删，放到下次识别的history_data[0]
         max_del_index = max(del_index)
         del_index.remove(max_del_index)
 
@@ -755,6 +783,7 @@ class ResultFilter:
                         else:
                             flag_second = False
                 if flag_first and flag_second and deal_title_map:
+                    #找到断点break
                     break_index = index  #[0, index), index是需要处理的最后一个索引的下一个
                     break
 
@@ -799,6 +828,9 @@ class ResultFilter:
             max_index = max(index_range)
             duration_dict = self.compute_played_duration(history_data, min_index, max_index, True, "custom")
 
+            #duration = self.get_duration(history_data[max_index][1], history_data[min_index][1])
+            #duration_accurate = self.get_duration_accurate(history_data[max_index][2], history_data[min_index][2], 'custom')
+
         if ret_data:
             duration = duration_dict["duration"]
             duration_accurate = duration_dict["duration_accurate"]
@@ -817,6 +849,7 @@ class ResultFilter:
                     cut_index = break_index + i + 1
                 else:
                     break
+            #此处减一是为了保留最后一个作为history_data[0],为下一个计算played_duration
             cut_index = cut_index - 1 if cut_index >= 1 else cut_index
             history_data = history_data[cut_index:]
             self._delay_custom[stream_id] = history_data
@@ -825,17 +858,18 @@ class ResultFilter:
 
 class Backup:
 
-    def __init__(self, config, dlog):
+    def __init__(self, config, recordQueue, dlog):
         self._sql = "insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, CURRENT_DATE()) on duplicate key update id=LAST_INSERT_ID(id)"
         self._config = config
         db_config = self._config["database"]
+        self._recordQueue = recordQueue
         self._redis_map = {}
         self.dlog = dlog
         self._mdb = MysqlManager(host=db_config["host"],
-                             port=db_config["port"],
-                             user=db_config["user"],
-                             passwd=db_config["passwd"],
-                             dbname=db_config["db"])
+                                 port=db_config["port"],
+                                 user=db_config["user"],
+                                 passwd=db_config["passwd"],
+                                 dbname=db_config["db"])
         self._log_dir = self._config["log"]["dir"]
         self._result_filter = ResultFilter(self.dlog, self._log_dir)
         self._tools_lan = tools_language.tools_language()
@@ -873,6 +907,7 @@ class Backup:
         if 'response' in old_data['result']:
             old_data['result'] = old_data['result']['response']
 
+        #从pem_file中清除pem_file
         old_data['pem_file'] = ''
 
         data = None
@@ -932,6 +967,11 @@ class Backup:
         if 'response' in old_data['result']:
             old_data['result'] = old_data['result']['response']
 
+        if (isCustom==0 and old_data.get('record', [0,0,0])[0] in [2,3]) or (isCustom==1 and old_data.get('record', [0,0,0])[0]==1):
+            record_add_data = copy.deepcopy(old_data)
+            self._recordQueue.put(('add', record_add_data))
+
+        #从pem_file中清除pem_file
         old_data['pem_file'] = ''
 
         data = None
@@ -950,8 +990,14 @@ class Backup:
         if result and filter_chinese:
             result = self.filter_chinese(stream_id, result)
         if self._mdb and result:
-
             data['result'] = result  #之前涉及到的拷贝都是浅拷贝，这里的修改会影响到浅拷贝的变量history
+            try:
+                if (isCustom==0 and old_data.get('record', [0,0,0])[0] in [2,3]) or (isCustom==1 and old_data.get('record', [0,0,0])[0] in [1,3]):
+                    self._recordQueue.put(('save', data))
+                    result['metadata']['record_timestamp'] = self.format_timestamp(data['timestamp'])
+                    self.dlog.logger.info("Send To Record (streamID:{0}, isCustom:{1}, record:{2})".format(stream_id, isCustom, ",".join([ str(i) for i in data.get('record', [0,0,0])])))
+            except Exception as e:
+                self.dlog.logger.error("Error@save_one_delay.record.save_audio", exc_info=True)
 
             params = (access_key,
                       stream_url,

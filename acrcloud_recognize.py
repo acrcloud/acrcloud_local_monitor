@@ -40,9 +40,10 @@ class Acrcloud_Rec_Worker(threading.Thread):
     def callback_fun(self, result):
         try:
             self._resultQueue.put(result)
+            #print result
         except Exception as e:
             self._dlogger.error('Error@Acrcloud_Rec_Worker.callback_fun', exc_info=True)
-        
+
     def run(self):
         self._running = True
         while 1:
@@ -55,18 +56,18 @@ class Acrcloud_Rec_Worker(threading.Thread):
             try:
                 pem_file_encoded = ""
                 if self._shareDict.get("record_"+stream_info[1], [0,0,0])[0]:
-                    #pem_file_encoded = base64.b64encode(stream_info[6])
-                    pass
+                    pem_file_encoded = base64.b64encode(stream_info[6])
+
                 result = {"stream_id": stream_info[1],
-                          "stream_url": stream_info[2], 
-                          "access_key": stream_info[3], 
+                          "stream_url": stream_info[2],
+                          "access_key": stream_info[3],
                           "result": "",
                           "callback_url": self._shareDict.get("callback_"+stream_info[3], ""),
                           "filter_chinese": int(self._shareDict.get("filter_chinese_"+stream_info[1], 1)),
-                          "delay":int(self. _shareDict.get("delay_"+stream_info[1], 1)),
+                          "delay":int(self._shareDict.get("delay_"+stream_info[1], 1)),
                           "record":self._shareDict.get("record_"+stream_info[1], [0,0,0]),
                           "monitor_seconds":stream_info[5] + stream_info[8],
-                          "pem_file":"",
+                          "pem_file":pem_file_encoded,
                           "timestamp": stream_info[7]}
                 #print result
                 res = self._recognizer.recognize(stream_info[0],
