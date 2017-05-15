@@ -24,6 +24,10 @@ Local **Bradcast Monitoring** System is used to monitor live radio streams on yo
 6. You can use client to refresh, get stream state, pause and restart stream, run `python acrcloud_client.py`.
 7. You can use `Ctrl + \` to stop monitor server (in Linux).
 8. You can get monitoring results in your MySql database.
+9. If you want to record recognize audio, you can set config["record"]["record"]=3 (default is 0 and it is not record).
+   You can set config["record"]["record_dir"] to specify the save path.
+   You can set config["record"]["record_save_days"] to specify the keep days of record files.
+   These config can be set in "acrcloud_config.py".
 
 ## Python Dependency Library
 1. [Twisted](https://github.com/twisted/twisted)
