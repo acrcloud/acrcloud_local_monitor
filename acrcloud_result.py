@@ -95,10 +95,12 @@ class ResultFilter:
         self._real_custom_valid_interval = 5*60
         self._delay_music = {}
         self._delay_music_last_result = {}
+        self._delay_music_interval_threshold = 2*60
         self._delay_custom = {}
+        self._delay_custom_played_duration_min = 2
+        self._delay_music_played_duration_min = 1
         self._delay_list_max_num = 30
         self._delay_list_threshold = 70#self._delay_list_max_num*3
-        self._recovery_interval = 24*60*60 #只恢复24小时之内的备份数据
 
     def get_mutil_result_title(self, data, itype='music', isize = 1):
         ret_list = []
@@ -192,11 +194,32 @@ class ResultFilter:
             if ret_index > 0:
                 music_list[0], music_list[ret_index] = music_list[ret_index], music_list[0]
 
+    """
     def custom_result_append(self, ret_data, title, from_data, count):
         for item in from_data['result']['metadata']['custom_files']:
             if item["acrid"] == title:
                 item["count"] = count
                 ret_data['result']['metadata']['custom_files'].append(item)
+    """
+
+    def custom_result_append(self, ret_data, title, from_data, count, tmp_deal_title_map):
+        ret_title_set = set()
+        for item in ret_data['result']['metadata']['custom_files']:
+            ret_title_set.add(item['acrid'])
+
+        for item in from_data['result']['metadata']['custom_files']:
+            acrid = item['acrid']
+            if acrid == title and acrid not in ret_title_set:
+                item['count'] = count
+                ret_data['result']['metadata']['custom_files'].append(item)
+                ret_title_set.add(acrid)
+
+        for item in from_data['result']['metadata']['custom_files']:
+            acrid = item['acrid']
+            if acrid not in ret_title_set:
+                if acrid in tmp_deal_title_map:
+                    item['count'] = tmp_deal_title_map[acrid]['count']
+                    ret_data['result']['metadata']['custom_files'].append(item)
 
     def get_play_offset(self, data, itype='music'):
         try:
@@ -281,11 +304,11 @@ class ResultFilter:
             mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
         else:
             mix_len = (isize-1)*monitor_len + end_sample_offset - begin_sample_offset
-        mix_len = int(math.ceil(mix_len)) + 1
 
-        #played_duration = self.get_duration_accurate(end_data, begin_data, itype)
-        #title = self.get_mutil_result_title(begin_data, itype, 1)[0]
-        #self._dlog.logger.error("Timestamp:{11}, Title:{0},  played_d:{1}, db_d:{2}, sample_d:{3}, mix_d:{4}, begin_db:{5}, end_db:{6}, begin_sample:{7}, end_sample:{8}, isize:{9}, mon_len:{10}, itype:{11}".format(title, played_duration, db_len, sample_len, mix_len, begin_db_offset, end_db_offset, begin_sample_offset, end_sample_offset, isize, monitor_len, accurate_begin_timestamp, itype))
+        mix_len = int(math.ceil(mix_len))
+        if mix_len == 0:
+            mix_len = 1
+
         return sample_len, db_len, mix_len, accurate_begin_timestamp
 
     def judge_zero_item_contain_current_result(self, ret_sim_title, zero_data, itype="music"):
@@ -748,36 +771,91 @@ class ResultFilter:
             self._dlog.logger.error("Error@deal_delay_custom", exc_info=True)
         return ret_result
 
+    def remove_next_result_from_now_result_list(self, history_data, ret_data, max_index):
+        #Just for custom delay filter
+        try:
+            if ret_data and len(history_data) >= max_index+2:
+                acrid_list, timestamp, next_data = history_data[max_index + 1]
+                if next_data:
+                    #update max size acrid_list to 20
+                    next_acrid_list = self.get_mutil_result_acrid(next_data, 'custom', 1)
+                    next_acrid_set = set(next_acrid_list)
+                    new_ret_custom_files = []
+                    for index, item in enumerate(ret_data["result"]["metadata"]["custom_files"]):
+                        if index == 0 or (item["acrid"] not in next_acrid_set):
+                            new_ret_custom_files.append(item)
+                    ret_data["result"]["metadata"]["custom_files"] = new_ret_custom_files
+        except Exception as e:
+            self._dlog.logger.error("Error@remove_next_result_from_now_result_list", exc_info=True)
+
+    def get_custom_duration_by_title(self, title, ret_data):
+        try:
+            duration = 0
+            for index, item in enumerate(ret_data["result"]["metadata"]["custom_files"]):
+                #custom 获取的title是acrid
+                if title == item["acrid"]:
+                    duration_ms = int(item["duration_ms"])
+                    if duration_ms >= 0:
+                        duration = int(duration_ms/1000)
+        except Exception as e:
+            self._dlog.logger.error("Error@get_custom_duration_by_title, error_data:{0}".format(ret_data), exc_info=True)
+        return duration
+
+    def custom_delay_dynamic_judge_size(self, deal_title_map, history_data):
+        try:
+            judge_size = 6
+            title = deal_title_map.keys()[0]
+            index = deal_title_map[title]["index_list"][-1]
+            ret_data = history_data[index][2]
+            duration = self.get_custom_duration_by_title(title, ret_data)
+            tmp_size = int(duration/10)
+            if tmp_size <=6:
+                judge_size = tmp_size if tmp_size > 1 else 2
+        except Exception as e:
+            self._dlog.logger.error("Error@custom_delay_dynamic_judge_size", exc_info=True)
+
+        return judge_size if judge_size >= 2 else 2
+
+
     def runDelayX_custom(self, stream_id):
         history_data = self._delay_custom[stream_id]
 
         if len(history_data) >= self._delay_list_threshold:
             self._dlog.logger.error("delay_custom[{0}] list num({1}) over threshold {2}".format(stream_id, len(history_data), self._delay_list_threshold))
             self._dlog.logger.error("delay_custom[{0}] data: \n{1}".format(stream_id, '\n'.join([str(item[:-1]) for item in history_data])))
-            history_data = history_data[-self._delay_list_threshold:]
-            history_data.append(([NORESULT], "", ""))
-            history_data.append(([NORESULT], "", ""))
-            history_data.append(([NORESULT], "", ""))
-            history_data.append(([NORESULT], "", ""))
+
+            history_data = history_data[-(self._delay_list_threshold-1):]
+            history_data_len = len(history_data)
+            #保证index=1的item不为NoResult
+            for ii in range((history_data_len-1), 0, -1):
+                if history_data[-ii][0][0] == NORESULT:
+                    continue
+                else:
+                    history_data = history_data[-(ii+1):]
+                    break
 
         ########## Get Break Index ##########
         deal_title_map = {} #key:title, value:{'count':0, 'index_list':[]}
+        tmp_deal_title_map = {} #用于存放多个结果的map
         break_index = 0
 
+        #history_data[0] 作为上一个结果的保留，用于计算played_duration时判断前一个是否包含当前结果
         for index, item in enumerate(history_data[1:]):
+            #index此时需要从1开始
             index += 1
             title_list, timestamp, data = item
-            if index!=0:
+            if index!=1:
                 flag_first = True
                 flag_second = True
-                for title in title_list:
+                for title in title_list[:1]:
                     if title in deal_title_map:
                         flag_first = False
                 if flag_first:
-                    for i in range(1,5):
+                    judge_size = self.custom_delay_dynamic_judge_size(deal_title_map, history_data)
+                    for i in range(1,judge_size):
                         if index + i < len(history_data):
                             next_title_list, next_timestamp, next_data = history_data[index + i]
-                            for title in next_title_list:
+                            for title in next_title_list[:1]:
                                 if title in deal_title_map:
                                     flag_second = False
                         else:
@@ -787,13 +865,19 @@ class ResultFilter:
                     break_index = index  #[0, index), index是需要处理的最后一个索引的下一个
                     break
 
-            for title in title_list:
+            for i, title in enumerate(title_list):
                 if title == NORESULT:
                     continue
-                if title not in deal_title_map:
-                    deal_title_map[title] ={'count':0, 'index_list':[]}
-                deal_title_map[title]['count'] += 1
-                deal_title_map[title]['index_list'].append(index)
+                if i == 0:
+                    if title not in deal_title_map:
+                        deal_title_map[title] ={'count':0, 'index_list':[]}
+                    deal_title_map[title]['count'] += 1
+                    deal_title_map[title]['index_list'].append(index)
+                #记录多结果的count
+                if title not in tmp_deal_title_map:
+                    tmp_deal_title_map[title] = {'count':0, 'index_list':[]}
+                tmp_deal_title_map[title]['count'] += 1
+                tmp_deal_title_map[title]['index_list'].append(index)
 
         ########### New Deal Custom Result Add Count ###########
         ret_data = None
@@ -819,7 +903,7 @@ class ResultFilter:
                         first_item_flag = False
                         ret_data = copy.deepcopy(from_data)
                         ret_data["result"]["metadata"]["custom_files"] = []
-                    self.custom_result_append(ret_data, dtitle, from_data, scount)
+                    self.custom_result_append(ret_data, dtitle, from_data, scount, tmp_deal_title_map) #为每个title添加count
 
             index_range = set()
             for title in deal_title_map:
@@ -828,8 +912,8 @@ class ResultFilter:
             max_index = max(index_range)
             duration_dict = self.compute_played_duration(history_data, min_index, max_index, True, "custom")
 
-            #duration = self.get_duration(history_data[max_index][1], history_data[min_index][1])
-            #duration_accurate = self.get_duration_accurate(history_data[max_index][2], history_data[min_index][2], 'custom')
+            #去除当前结果的末尾识别到了下一个结果的前部，即判断当前结果列表里是否可能包含下一个结果，若存在，则去除
+            self.remove_next_result_from_now_result_list(history_data, ret_data, max_index)
 
         if ret_data:
             duration = duration_dict["duration"]
@@ -840,6 +924,8 @@ class ResultFilter:
             accurate_timestamp_utc = duration_dict["accurate_timestamp_utc"]
             ret_data['result']['metadata']['played_duration'] = mix_duration
             ret_data['result']['metadata']['timestamp_utc'] = accurate_timestamp_utc
+            if ret_data['result']['metadata']['played_duration'] <= self._delay_custom_played_duration_min:
+                ret_data = None
 
         ########### cut history_data #############
         if break_index>=0:
@@ -852,8 +938,28 @@ class ResultFilter:
             #此处减一是为了保留最后一个作为history_data[0],为下一个计算played_duration
             cut_index = cut_index - 1 if cut_index >= 1 else cut_index
             history_data = history_data[cut_index:]
+
+            #修复bug，当index=1，为noresult是会报错，title_list是空会导致报错
+            reverse_index = -1
+            for i, item in enumerate(history_data[::-1]):
+                if item[0][0] == NORESULT:
+                    reverse_index = i
+                    continue
+                else:
+                    break
+
+            if reverse_index != -1:
+                new_cut_index = -1
+                reverse_index = len(history_data) - reverse_index - 1
+                if reverse_index in [0, 1]:
+                    history_data = []
+                else:
+                    pass
+
             self._delay_custom[stream_id] = history_data
+
         return ret_data
+
 
 
 class Backup:
