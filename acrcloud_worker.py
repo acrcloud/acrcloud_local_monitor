@@ -26,7 +26,7 @@ from xml.dom import minidom
 try:
     from bs4 import BeautifulSoup
 except ImportError:
-    from BeautifulSoup import BeautifulSoup 
+    from BeautifulSoup import BeautifulSoup
 
 import acrcloud_stream_decode as acrcloud_download
 from acrcloud_logger import AcrcloudLogger
@@ -107,13 +107,13 @@ class Worker_DownloadStream(threading.Thread):
         self.checkURL()
         self._Runing = True
         self.setDaemon(True)
-        
+
     def parsePLS(self, url):
         plslist = []
         pageinfo = self.getPage(url)
         plslist = re.findall(r'(http.*[^\r\n\t ])', pageinfo)
         return plslist
-        
+
     def parseASX(self, url):
         asxlist = []
         pageinfo = self.getPage(url)
@@ -159,7 +159,7 @@ class Worker_DownloadStream(threading.Thread):
                 if slist:
                     self._dlogger.info("mms ({0}) true stream is: ({1})\n".format(self._stream_url, slist[0]))
                     self._stream_url = slist[0]
-            
+
             path = urlparse.urlparse(self._stream_url).path
             ext = os.path.splitext(path)[1]
             if ext == '.m3u':
@@ -189,7 +189,7 @@ class Worker_DownloadStream(threading.Thread):
                 self._streams_flag = True
         except Exception as e:
             self._dlogger.error("Error@Worker_DownloadStream.checkURL", exc_info=True)
-    
+
     def streams_change(self):
         if self.streams_flag:
             self.streams_index = (self.streams_index + 1) % len(self.streams_list)
@@ -237,7 +237,7 @@ class Worker_DownloadStream(threading.Thread):
                 'open_timeout_sec':self._open_timeout_sec,
                 'read_timeout_sec':self._read_timeout_sec,
             }
-            code, msg = self._downloadf.decode_audio(acrdict)
+            code, msg, ffmpeg_code, ffmpeg_msg = self._downloadf.decode_audio(acrdict)
             return code, msg
         except Exception as e:
             self._dlogger.error('Error@Worker_DownloadStream.produce_data', exc_info=True)
@@ -251,7 +251,7 @@ class Worker_DownloadStream(threading.Thread):
             if not self._Runing:
                 break
 
-            '''  
+            '''
             0, msg = "pause & break"
             1, msg = "avformat_open_input error";
             2, msg = "avformat_find_stream_info error";
@@ -265,7 +265,7 @@ class Worker_DownloadStream(threading.Thread):
             10, msg = "av_read_frame up timeout count";
             else, msg = "None";
             '''
-            
+
             self._cmdQueue.put('STATUS#0#running')
             code, msg = self.produce_data()
 
@@ -320,7 +320,7 @@ class AcrcloudWorker:
         self.initLog()
         self.initConfig(info)
         self.isFirst = True
-        
+
     def initLog(self):
         self._dlog = AcrcloudLogger("SWorker_{0}.log".format(self._stream_id), logging.INFO)
         if not self._dlog.addFilehandler(logfile = "SWorker_{0}.log".format(self._stream_id), logdir = self._config['log']['dir']):
@@ -345,7 +345,7 @@ class AcrcloudWorker:
             self.rebornTime = 0
             self.deadThreshold = 20 #self._config["server"]["dead_Threshold"]
             self.isFirst = True
-            
+
             if self._monitor_timeout <= self._monitor_interval + self._monitor_length:
                 self._monitor_timeout = self._monitor_interval + self._monitor_length + 2
             self._downloadFun = acrcloud_download
@@ -361,9 +361,8 @@ class AcrcloudWorker:
         stat = self._shareStatusDict[self._stream_id]
         stat[index] = msg
         self._shareStatusDict[self._stream_id] = stat
-    
-    def newStart(self):
 
+    def newStart(self):
         self._collectHandler = Worker_CollectData(self._rec_host,
                                                   self._stream_id,
                                                   self._stream_url,
@@ -378,9 +377,9 @@ class AcrcloudWorker:
                                                   self._monitor_timeout,
                                                   self._timeout_Threshold)
         self._collectHandler.start()
-        
-        self._downloadHandler = Worker_DownloadStream(self._stream_url,                                                    
-                                                      self._workQueue, 
+
+        self._downloadHandler = Worker_DownloadStream(self._stream_url,
+                                                      self._workQueue,
                                                       self._download_cmdQueue,
                                                       self._downloadFun,
                                                       self._dlog.logger,
@@ -448,7 +447,7 @@ class AcrcloudWorker:
                 self.killedcount = 0
         elif recv_thread.startswith("ISVIDEO"):
             self.changeStat(1, recv_thread[len('ISVIDEO#'):])
-                
+
     def start(self):
         self.newStart()
         self.deadTime = None
@@ -475,7 +474,7 @@ class AcrcloudWorker:
                     self.newStart()
                     self.invalid_url_time = None
                     self.invalid_url_flag = False
-                    
+
             if self.deadflag:
                 passTime = (datetime.datetime.now() - self.deadTime).seconds
                 if passTime % 10 == 0:
@@ -500,14 +499,14 @@ class AcrcloudWorker:
                     self._dlog.logger.warn("Killed Worker Reborn...")
                     self.newStart()
                     self.killedTime = None
-                    self.killedflag = False                                                                                                                                         
+                    self.killedflag = False
             try:
                 recv = self._mainqueue.get(block=False)
             except Queue.Empty:
                 time.sleep(0.5)
             if self.deal_mainCMD(recv):
                 break
-                
+
             try:
                 recv_thread = self._download_cmdQueue.get(block=False)
             except Queue.Empty:
