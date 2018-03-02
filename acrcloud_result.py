@@ -16,7 +16,7 @@ import tools_language
 import multiprocessing
 from dateutil.relativedelta import *
 from acrcloud_record import recordWorker
-
+from acrcloud_callback import postManager
 reload(sys)
 sys.setdefaultencoding("utf8")
 
@@ -31,10 +31,12 @@ class Acrcloud_Result:
         self._log_dir = self._config['log']['dir']
         self._mainQueue = mainqueue
         self._resultQueue = resultQueue
+        self._callbackQueue = multiprocessing.Queue()
         self._recordQueue = multiprocessing.Queue()
         self.init_logger()
-        self.data_backup = Backup(self._config, self._recordQueue, self.dlog)
+        self.data_backup = Backup(self._config, self._recordQueue, self._callbackQueue, self.dlog)
         self.init_record()
+        self.init_callback_manager()
         self.dlog.logger.warn("Warn@Acrcloud_Result Init Success!")
 
     def init_logger(self):
@@ -50,8 +52,23 @@ class Acrcloud_Result:
             if not self.record_proc.is_alive():
                 self.dlog.logger.error("Error@Acrcloud_Result.record worker run failed, exit")
                 sys.exit(1)
+            else:
+                self.dlog.logger.warn("Warn@Acrcloud_Result.init_record success")
         except Exception as e:
             self.dlog.logger.error('Error@Acrcloud_Result.init_record', exc_info=True)
+
+    def init_callback_manager(self):
+        try:
+            self.callback_manager_proc = multiprocessing.Process(target=postManager, args=(self._callbackQueue,))
+            self.callback_manager_proc.start()
+            if not self.callback_manager_proc.is_alive():
+                self.dlog.logger.error("Error@Acrcloud_Result.init_callback_manager run failed, exit")
+                sys.exit(1)
+            else:
+                self.dlog.logger.warn("Warn@Acrcloud_Result.init_callback_manager success")
+        except Exception as e:
+            self.dlog.logger.error("Error@Acrcloud_Result.init_callback_manager", exc_info=True)
+
 
     def deal_result(self, resinfo):
         try:
@@ -964,11 +981,12 @@ class ResultFilter:
 
 class Backup:
 
-    def __init__(self, config, recordQueue, dlog):
+    def __init__(self, config, recordQueue, callbackQueue, dlog):
         self._sql = "insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, CURRENT_DATE()) on duplicate key update id=LAST_INSERT_ID(id)"
         self._config = config
         db_config = self._config["database"]
         self._recordQueue = recordQueue
+        self._callbackQueue = callbackQueue
         self._redis_map = {}
         self.dlog = dlog
         self._mdb = MysqlManager(host=db_config["host"],
@@ -1053,8 +1071,17 @@ class Backup:
             result = data.get('result', {})
             if result and filter_chinese:
                 result = self.filter_chinese(stream_id, result)
+
             if self._mdb and result:
-                data['result'] = result  #之前涉及到的拷贝都是浅拷贝，这里的修改会影响到浅拷贝的变量history
+                data['result'] = result
+
+                #post result to callback url
+                try:
+                    postdata = copy.deepcopy(data)
+                    self._callbackQueue.put(json.dumps(postdata))
+                except Exception as e:
+                    self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
+
                 params = (access_key,
                           stream_url,
                           stream_id,
@@ -1104,6 +1131,13 @@ class Backup:
                     self.dlog.logger.info("Send To Record (streamID:{0}, isCustom:{1}, record:{2})".format(stream_id, isCustom, ",".join([ str(i) for i in data.get('record', [0,0,0])])))
             except Exception as e:
                 self.dlog.logger.error("Error@save_one_delay.record.save_audio", exc_info=True)
+
+            #post result to callback url
+            try:
+                postdata = copy.deepcopy(data)
+                self._callbackQueue.put(json.dumps(postdata))
+            except Exception as e:
+                self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
 
             params = (access_key,
                       stream_url,

@@ -36,7 +36,7 @@ class acrcloud_recognize:
         except Exception, e:
             self.dlog.logger.error('post_multipart error', exc_info=True)
         return None
-        
+
     def encode_multipart_formdata(self, fields, files):
         try:
             boundary = mimetools.choose_boundary()
@@ -63,7 +63,7 @@ class acrcloud_recognize:
         return None, None
 
     def gen_fp(self, buf, rate=0):
-        return acrcloud_stream_decode.create_fingerprint(buf, False)
+        return acrcloud_stream_decode.create_fingerprint(buf, False, 50)
 
     def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=5):
         http_method = "POST"
@@ -75,15 +75,15 @@ class acrcloud_recognize:
 
         string_to_sign = http_method+"\n"+http_url_file+"\n"+access_key+"\n"+data_type+"\n"+signature_version+"\n"+str(timestamp)
         sign = base64.b64encode(hmac.new(str(access_secret), str(string_to_sign), digestmod=hashlib.sha1).digest())
-    
+
         fields = {'access_key':access_key,
                   'stream_id':stream_id,
-                  'sample_bytes':sample_bytes, 
-                  'timestamp':str(timestamp), 
-                  'signature':sign, 
-                  'data_type':data_type, 
+                  'sample_bytes':sample_bytes,
+                  'timestamp':str(timestamp),
+                  'signature':sign,
+                  'data_type':data_type,
                   "signature_version":signature_version}
-        
+
         server_url = 'http://' + host + http_url_file
         res = self.post_multipart(server_url, fields, {"sample" : query_data}, timeout)
         return res
@@ -96,4 +96,4 @@ class acrcloud_recognize:
         except Exception as e:
             self.dlog.logger.error('recognize error', exc_info=True)
         return res
-        
+

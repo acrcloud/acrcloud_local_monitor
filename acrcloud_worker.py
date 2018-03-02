@@ -228,10 +228,27 @@ class Worker_DownloadStream(threading.Thread):
             return 1
         return 0
 
+    def callback_new(self, res_dict):
+        try:
+            ret_code = 0
+            if res_dict.get('metadata') != None:
+                pass
+            else:
+                isvideo = res_dict.get('is_video', None)
+                buf = res_dict.get('audio_data', None)
+                if isvideo is not None and buf is not None:
+                    ret_code = self.callback(int(isvideo), buf)
+                else:
+                    self._dlog.logger.error('Error@Worker_DownloadStream.callback_new.isvideo_or_buf_isNone')
+                    time.sleep(5)
+        except Exception as e:
+            self._dlog.logger.error('Error@Worker_DownloadStream.callback_new', exc_info=True)
+        return ret_code
+
     def produce_data(self):
         try:
             acrdict = {
-                'callback_func':self.callback,
+                'callback_func':self.callback_new,
                 'stream_url':self._stream_url,
                 'read_size_sec':self._read_size_sec,
                 'open_timeout_sec':self._open_timeout_sec,

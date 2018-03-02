@@ -117,7 +117,7 @@ class AcrcloudSpringboard:
         self.rworker = rworker
         self.sworker = sworker
         self.access_key = self.config['user']['access_key']
-        self.access_secret = self.config['user']['access_secret']
+        #self.access_secret = self.config['user']['access_secret']
         self.api_url = self.config['user']['api_url']
         self.record = int(self.config['record']['record'])
         self.record_before = int(self.config['record']['record_before'])
@@ -209,10 +209,26 @@ class AcrcloudSpringboard:
         try:
             stream_data = self.getStreamInfo(self.api_url, self.access_key)
             info_list = json.loads(stream_data)
+
+            #get access_secret
+            access_secret = info_list.get("access_secret")
+            if not access_secret:
+                self.dlog.logger.error("Error@Springboard.initStreams.get access_secret failed, exit!")
+                sys.exit(1)
+            else:
+                self.dlog.logger.warn("Warn@Springboard.initStraems.get access_info success")
+
+            #get callback info
+            callback_url = info_list.get("callback_url", "")
+            callback_type = info_list.get("callback_type", 2) #1.Form, 2.Json
+            self.shareDict["callback_url_"+self.access_key] = callback_url
+            self.shareDict["callback_type_"+self.access_key] = callback_type
+            self.dlog.logger.warn("Warn@Springboard.initStreams.callback_info.(callback_url:{0}, callback_type:{1})".format(callback_url, callback_type))
+
             #parse jsoninfo to self.shareMonitorDict
             for jsoninfo in info_list.get('streams', []):
                 jsoninfo['access_key'] = self.access_key
-                jsoninfo['access_secret'] = self.access_secret
+                jsoninfo['access_secret'] = access_secret
                 stream_id = jsoninfo['stream_id']
                 createTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
                 self.shareMonitorDict[stream_id] = [jsoninfo, createTime, 0]
@@ -230,10 +246,26 @@ class AcrcloudSpringboard:
             self.dlog.logger.warn('Warn@Springboard.reFresh start...')
             stream_data = self.getStreamInfo(self.api_url, self.access_key)
             info_list = json.loads(stream_data)
+
+            #get access_secret
+            access_secret = info_list.get("access_secret")
+            if not access_secret:
+                self.dlog.logger.error("Error@Springboard.reFresh.get access_secret failed, exit!")
+                sys.exit(1)
+            else:
+                self.dlog.logger.warn("Warn@Springboard.reFresh.get access_info success")
+
+            #get callback info
+            callback_url = info_list.get("callback_url", "")
+            callback_type = info_list.get("callback_type", 2) #1.Form, 2.Json
+            self.shareDict["callback_url_"+self.access_key] = callback_url
+            self.shareDict["callback_type_"+self.access_key] = callback_type
+            self.dlog.logger.warn("Warn@Springboard.reFresh.callback_info.(callback_url:{0}, callback_type:{1})".format(callback_url, callback_type))
+
             new_stream_ids = set()
             for jsoninfo in info_list.get('streams', []):
                 jsoninfo['access_key'] = self.access_key
-                jsoninfo['access_secret'] = self.access_secret
+                jsoninfo['access_secret'] = access_secret
                 stream_id = jsoninfo.get('stream_id')
                 if not stream_id:
                     continue
@@ -255,7 +287,7 @@ class AcrcloudSpringboard:
             monitor_stream_ids = set(self.shareMonitorDict.keys())
             del_stream_ids = monitor_stream_ids - new_stream_ids
             self.dlog.logger.info('Del_stream_ids:{0}'.format(','.join(del_stream_ids)))
-            for del_stream_id in del_stream_ids:                
+            for del_stream_id in del_stream_ids:
                 self.changeMon(del_stream_id, 2, 3) #3代表删除
             self.mainQueue.put(('refresh', ''))
             return 'STORED'
@@ -274,7 +306,7 @@ class AcrcloudSpringboard:
                 value = 0
             monitor_str_list.append(str(value))
         return '|#|'.join(monitor_str_list)
-            
+
     def reStart(self, info):
         try:
             jsoninfo = json.loads(info)
@@ -283,7 +315,7 @@ class AcrcloudSpringboard:
                 code, msg = self.shareStatusDict[jsoninfo['stream_id']][0].split('#')
                 if code == '4' or code == '3' or code == '6':
                     self.mainQueue.put(('restart', jsoninfo))
-                    return 'STORED'            
+                    return 'STORED'
         except Exception as e:
             self.dlog.logger.error('Error@Springboard.restart_stream', exc_info=True)
         return 'NOT_STORED'
@@ -300,7 +332,7 @@ class AcrcloudSpringboard:
         except Exception as e:
             self.dlog.logger.error('Error@Springboard.pause_stream', exc_info=True)
         return 'NOT_STORED'
-    
+
     def getStat(self, stream_id):
         invalidstat = {'status':1, 'code':5, 'msg':'invalid stream_id', 'delay':1,
                        'filter_lan':1, 'type':'unknow', 'stream_id':stream_id,
@@ -335,7 +367,7 @@ class AcrcloudSpringboard:
                     return json.dumps({'response':invalidstat})
 
         except Exception as e:
-            self.dlog.logger.error('Error@@Springboard.get_state', exc_info=True)            
+            self.dlog.logger.error('Error@@Springboard.get_state', exc_info=True)
 
         return json.dumps({'response':invalidstat})
 
@@ -369,9 +401,9 @@ class AcrcloudSpringboard:
         except Exception as e:
             self.dlog.logger.error('Error@Springboard.stop_stream', exc_info=True)
         return 'NOT_STORED'
-    
+
 class AcrcloudMonitor:
-    
+
     def __init__(self, mainQueue, config,
                  shareMonitorDict,
                  shareStatusDict,
@@ -395,7 +427,7 @@ class AcrcloudMonitor:
         self.initLog()
         self.initRec()
         self.initRes()
-                
+
     def initLog(self):
         self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
         self.dlog = AcrcloudLogger('Monitor@Main', logging.INFO)
@@ -451,7 +483,7 @@ class AcrcloudMonitor:
                 time.sleep(1)
         except Exception as e:
             self.dlog.logger.error('Error@AcrcloudMonitor.startMonitor', exc_info=True)
-        
+
     def addMonitor(self, jsoninfo):
         try:
             stream_id = jsoninfo.get('stream_id')
@@ -497,7 +529,7 @@ class AcrcloudMonitor:
                     del self.shareMonitorDict[stream_id]
         except Exception as e:
             self.dlog.logger.error('Del All Monitors Error', exc_info=True)
-    
+
     def reStart(self, jsoninfo):
         try:
             stream_id = jsoninfo.get('stream_id')
@@ -562,7 +594,7 @@ class AcrcloudMonitor:
             self.dlog.logger.error('Error@AcrcloudMonitor.PAUSE Monitor Error:', exc_info=True)
         self.dlog.logger.error('Error@AcrcloudMonitor.PAUSE Monitor Failed ({0}, {1}).'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
         return False
-            
+
     def doIt(self, cmd, info):
         try:
             if cmd == 'heiheihei':
@@ -613,6 +645,6 @@ def RecWorker(mainqueue, recqueue, resultqueue, shareDict, config):
 def ResWorker(mainqueue, resultqueue, config):
     sWorker = Acrcloud_Result(mainqueue, resultqueue, config)
     sWorker.start()
-    
+
 acrcloudMana = AcrcloudManager(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker))
-    
+

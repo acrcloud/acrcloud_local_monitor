@@ -62,7 +62,8 @@ class Acrcloud_Rec_Worker(threading.Thread):
                           "stream_url": stream_info[2],
                           "access_key": stream_info[3],
                           "result": "",
-                          "callback_url": self._shareDict.get("callback_"+stream_info[3], ""),
+                          "callback_url": self._shareDict.get("callback_url_"+stream_info[3], ""),
+                          "callback_type": self._shareDict.get("callback_type_"+stream_info[3], 2),
                           "filter_chinese": int(self._shareDict.get("filter_chinese_"+stream_info[1], 1)),
                           "delay":int(self._shareDict.get("delay_"+stream_info[1], 1)),
                           "record":self._shareDict.get("record_"+stream_info[1], [0,0,0]),
@@ -102,11 +103,11 @@ class Acrcloud_Rec_Worker(threading.Thread):
             except Exception as e:
                 self._dlogger.error('Error@Worker_Recognize({0})'.format(self._worker_num), exc_info=True)
                 self._dlogger.error('Error@result: {0}'.format(json.dumps(result)))
-        
+
     def stop(self):
         self._running = False
         #self._dlogger.info('MSG@Acrcloud_Rec_Worker({0}).Delete_Success'.format(self._worker_num))
-        
+
 class Acrcloud_Rec_Manager:
 
     def __init__(self, mainqueue, recqueue, resultqueue, shareDict, config):
@@ -127,7 +128,7 @@ class Acrcloud_Rec_Manager:
             self.exitRecM('rec_error#0#init_flog_error')
         if not self._dlog.addStreamHandler():
             self.exitRecM('rec_error#0#init_slog_error')
-            
+
     def initConfig(self):
         #self._host = self._config['recognize']['host']
         #self._query_type = self._config['recognize']['query_type']
@@ -135,7 +136,7 @@ class Acrcloud_Rec_Manager:
         cpu_core = multiprocessing.cpu_count()
         self._init_nums = init_nums_map.get(str(cpu_core)+'core', 20)
         self._worker_num = 0
-        
+
         #####################
         ## init recognizer ##
         #####################
@@ -143,7 +144,7 @@ class Acrcloud_Rec_Manager:
         if not self._recognizer:
             self._dlog.logger.error('init recognize error')
             self.exitRecM('rec_error#1#init_recognize_error')
-            
+
     def initWorkers(self, new_nums):
         try:
             for i in range(new_nums):
@@ -184,7 +185,7 @@ class Acrcloud_Rec_Manager:
                 time.sleep(2)
             if cmdinfo[0] == 'stop':
                 self.stop()
-            
+
     def stop(self):
         self.delWorkers()
         self._running = False
