@@ -206,7 +206,7 @@ class PostManager:
                     self.assign_map[stream_id] = worker_id
                     self.assign_index += 1
                 post_worker_queue = self.post_worker_map[worker_id][1]
-                post_worker_queue.put((jsoninfo, callback_url, callback_type, send_noresult))
+                post_worker_queue.put((jsoninfo, callback_url.strip(), callback_type, send_noresult))
 
                 #判断回调队列任务数，如果超出则发送邮件
                 tmp_queue_size = post_worker_queue.qsize()
