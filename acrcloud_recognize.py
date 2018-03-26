@@ -108,6 +108,8 @@ class Acrcloud_Rec_Worker(threading.Thread):
         self._running = False
         #self._dlogger.info('MSG@Acrcloud_Rec_Worker({0}).Delete_Success'.format(self._worker_num))
 
+
+
 class Acrcloud_Rec_Manager:
 
     def __init__(self, mainqueue, recqueue, resultqueue, shareDict, config):
@@ -118,6 +120,7 @@ class Acrcloud_Rec_Manager:
         self._config = config
         self._recognizer = None
         self._workerpool = []
+        self._taskQueue = Queue.Queue()  #Manager receive audio and put to taskQueue to rec
         self.initLog()
         self.initConfig()
         self.initWorkers(self._init_nums)
@@ -151,7 +154,7 @@ class Acrcloud_Rec_Manager:
                 rechandler = Acrcloud_Rec_Worker(self._worker_num,
                                                  self._shareDict,
                                                  self._recognizer,
-                                                 self._recQueue,
+                                                 self._taskQueue,
                                                  self._resultQueue,
                                                  self._dlog.logger)
                 rechandler.start()
@@ -174,17 +177,28 @@ class Acrcloud_Rec_Manager:
             self._dlog.logger.error('Error@Del_Rec_Workers', exc_info=True)
             self._mainQueue.put('rec_error#4#del_rec_workers_error')
 
+    def addTask(self, recinfo):
+        try:
+            self._taskQueue.put(recinfo)
+        except Exception as e:
+            self._dlog.logger.error('Error@addTask', exc_info=True)
+
     def start(self):
         self._running = True
         while 1:
             if not self._running:
                 break
             try:
-                cmdinfo = self._mainQueue.get()
+                cmdinfo = self._mainQueue.get(block=False)
+                if cmdinfo[0] == 'stop':
+                    self.stop()
             except Queue.Empty:
-                time.sleep(2)
-            if cmdinfo[0] == 'stop':
-                self.stop()
+                pass
+            try:
+                recinfo = self._recQueue.get(block=False)
+                self.addTask(recinfo)
+            except Queue.Empty:
+                pass
 
     def stop(self):
         self.delWorkers()
