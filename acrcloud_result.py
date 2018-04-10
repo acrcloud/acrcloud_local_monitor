@@ -7,6 +7,7 @@ import json
 import copy
 import time
 import Queue
+import random
 import MySQLdb
 import datetime
 import threading
@@ -91,10 +92,14 @@ class Acrcloud_Result:
             try:
                 resinfo = self._resultQueue.get(block = False)
             except Queue.Empty:
+                if random.random() < 0.1:
+                    time.sleep(0.01)
                 continue
 
             self.deal_result(resinfo)
-            time.sleep(0.5)
+
+            if random.random() < 0.1:
+                self.dlog.logger.warn("Warn@resultQueue.qsize.{0}".format(self._resultQueue.qsize()))
 
     def stop(self):
         self._running = False
