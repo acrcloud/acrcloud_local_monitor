@@ -62,7 +62,7 @@ class RecordWorker:
     def check_expire_dir(self):
         try:
             if self.record_keep_days >0 and random.random() < 0.3:
-                nowtime = datetime.datetime.utcnow()
+                nowtime = datetime.datetime.now()
                 if nowtime.hour == 0 and nowtime.minute < 5:
                     self.auto_delete_overtime_records()
         except Exception as e:
@@ -71,7 +71,7 @@ class RecordWorker:
     def auto_delete_overtime_records(self):
         try:
             self.dlog.logger.info("MSG@Record_Worker.auto_delete_overtime_records start...")
-            expire_date_str = (datetime.datetime.utcnow() - relativedelta(days=self.record_keep_days)).strftime("%Y%m%d")
+            expire_date_str = (datetime.datetime.now() - relativedelta(days=self.record_keep_days)).strftime("%Y%m%d")
             stream_list = []
             for root, dirs, files in os.walk(self.record_dir):
                 stream_list = dirs

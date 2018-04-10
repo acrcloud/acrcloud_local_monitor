@@ -385,7 +385,7 @@ class ResultFilter:
         return is_contain, latter_data_swaped
 
     def real_check_title_custom(self, stream_id, title):
-        now_timestamp = datetime.datetime.utcnow()
+        now_timestamp = datetime.datetime.now()
         if stream_id not in self._real_custom:
             self._real_custom[stream_id] = [[('','')], '']
 
@@ -1096,7 +1096,7 @@ class Backup:
         return False
 
     def save_one_delay(self, old_data, isCustom=0):
-        filter_chinese = old_data.get("filter_chinese", 1)
+        filter_chinese = old_data.get("filter_chinese", 0)
         if 'response' in old_data['result']:
             old_data['result'] = old_data['result']['response']
 
