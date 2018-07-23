@@ -87,13 +87,13 @@ class Acrcloud_Result:
                 if maininfo and maininfo[0] == 'stop':
                     self.stop()
             except Queue.Empty:
-                pass
+                time.sleep(0.01)
 
             try:
                 resinfo = self._resultQueue.get(block = False)
             except Queue.Empty:
                 if random.random() < 0.1:
-                    time.sleep(0.01)
+                    time.sleep(0.02)
                 continue
 
             self.deal_result(resinfo)

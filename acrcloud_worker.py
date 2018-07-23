@@ -315,6 +315,7 @@ class Worker_DownloadStream(threading.Thread):
                 self._dlogger.error('Error@Worker_DownloadStream.exit.{0},{1}-{2}'.format(self._stream_url, code, msg))
                 self._cmdQueue.put('STATUS#2#dead')
                 break
+            time.sleep(0.1)
 
     def stop(self):
         self._Runing = False
@@ -530,3 +531,4 @@ class AcrcloudWorker:
                 time.sleep(0.5)
             if self.deal_workerCMD(recv_thread):
                 break
+            time.sleep(0.1)

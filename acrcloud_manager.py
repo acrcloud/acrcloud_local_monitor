@@ -480,7 +480,7 @@ class AcrcloudMonitor:
             for stream_id in self.shareMonitorDict.keys():
                 jsoninfo = self.shareMonitorDict[stream_id][0]
                 self.addMonitor(jsoninfo)
-                time.sleep(1)
+                time.sleep(0.5)
         except Exception as e:
             self.dlog.logger.error('Error@AcrcloudMonitor.startMonitor', exc_info=True)
 
@@ -620,6 +620,7 @@ class AcrcloudMonitor:
             except Queue.Empty:
                 continue
             self.doIt(cmd, info)
+            time.sleep(0.1)
 
     def stop(self):
         self.delAllM()

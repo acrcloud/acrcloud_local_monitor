@@ -206,7 +206,7 @@ class Acrcloud_Rec_Pool:
             if not self._running:
                 break
             try:
-                itype, recinfo = self._poolQueue.get(block=False)
+                itype, recinfo = self._poolQueue.get()
                 if itype == "cmd" and recinfo == 'stop':
                     self.stop()
                 else:
@@ -238,7 +238,7 @@ class Acrcloud_Rec_Manager:
         self.stream_assign_index = 0
         self.stream_assign_map = {}
 
-        self._init_pool_num = 1
+        self._init_pool_num = 3
         self.initPoolWorkers()
 
     def exitRecM(self, msg):
@@ -309,12 +309,13 @@ class Acrcloud_Rec_Manager:
                 if cmdinfo[0] == 'stop':
                     self.stop()
             except Queue.Empty:
-                pass
+                time.sleep(0.01)
             try:
                 recinfo = self._recQueue.get(block=False)
                 self.addTask(recinfo)
             except Queue.Empty:
-                pass
+                time.sleep(0.01)
+
 
     def stop(self):
         self.delPoolWorkers()
