@@ -153,7 +153,7 @@ class PostManager:
         self.init_post_worker()
         self.outside_ip = self.get_outside_ip()
         self.dlog.logger.warn("Warn@Init PostManager success!")
-        signal.signal(signal.SIGQUIT, self.signal_handler)
+        #signal.signal(signal.SIGQUIT, self.signal_handler)
 
     def signal_handler(self, signal, frame):
         self.dlog.logger.error("Receive signal.SIGQUIT, postWorker exit")

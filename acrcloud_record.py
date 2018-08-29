@@ -38,7 +38,7 @@ class RecordWorker:
         self.initLog()
         self.test_record_dir()
         self.dlog.logger.warning('Warn@Acrcloud_Record_Worker Init Success!')
-        signal.signal(signal.SIGQUIT, self.signal_handler)
+        #signal.signal(signal.SIGQUIT, self.signal_handler)
 
     def initLog(self):
         self.dlog = recordLogger("RecordLog", logging.INFO)
