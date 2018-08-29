@@ -46,7 +46,7 @@ Local **Bradcast Monitoring** System is used to monitor live radio streams on yo
 2. Install [Mysql](https://dev.mysql.com/downloads/installer/) on your windows
 3. Create Databases(in acrcloud_local_monitor direction and run this command)
 
-    `mysql -uroot -p acrcloud_database.sql`
+    `mysql -uroot -p < acrcloud_database.sql`
 
 4. Install [Python](https://www.python.org/downloads/)
 5. Install Python Dependency Library(in acrcloud_local_monitor direction and run the script)
