@@ -4,7 +4,7 @@ config = {
     },
     "user":{
         #ACRCloud Broadcast Monitoring, Local Project Access_Key And Access_Secret
-        "access_key":"",
+        "access_key":"XXXXXXXX",
         #API URL To Get The Local Monitor Streams Info
         "api_url":"https://api.acrcloud.com/v1/local-monitor-streams?access_key={0}",
     },
@@ -13,7 +13,7 @@ config = {
         "host":"127.0.0.1",
         "port":3306,
         "user":"root",
-        "passwd":"",
+        "passwd":"XXXXXXXXX",
         "db":"monitor_result",
     },
     "log":{
