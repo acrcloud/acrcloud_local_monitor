@@ -49,6 +49,7 @@ class Acrcloud_Result:
         try:
             self.record_proc = multiprocessing.Process(target = recordWorker,
                                                        args = (self._config, self._recordQueue))
+            self.record_proc.daemon = True
             self.record_proc.start()
             if not self.record_proc.is_alive():
                 self.dlog.logger.error("Error@Acrcloud_Result.record worker run failed, exit")
@@ -61,6 +62,7 @@ class Acrcloud_Result:
     def init_callback_manager(self):
         try:
             self.callback_manager_proc = multiprocessing.Process(target=postManager, args=(self._callbackQueue,))
+            self.callback_manager_proc.daemon = True
             self.callback_manager_proc.start()
             if not self.callback_manager_proc.is_alive():
                 self.dlog.logger.error("Error@Acrcloud_Result.init_callback_manager run failed, exit")
@@ -104,6 +106,7 @@ class Acrcloud_Result:
     def stop(self):
         self._running = False
         self.dlog.logger.warn('Warn@Acrcloud_Result_Stop')
+        sys.exit(1)
 
 class ResultFilter:
 

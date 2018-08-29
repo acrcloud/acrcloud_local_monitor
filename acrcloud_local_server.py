@@ -9,10 +9,13 @@
 
 import sys
 import traceback
+from multiprocessing import freeze_support
 from acrcloud_config import config
 from twisted.internet import reactor
-from acrcloud_manager import acrcloudMana
-from twisted.internet.protocol import Protocol, ServerFactory
+from acrcloud_manager import core_obj
+from twisted.internet.protocol import Protocol, ServerFactory, Factory
+
+freeze_support()
 
 reload(sys)
 sys.setdefaultencoding("utf8")
@@ -40,11 +43,11 @@ else:
         pass
 
 
-class Server(Protocol):
+class A_Protocol(Protocol):
 
-    def __init__(self):
-        self.mana = acrcloudMana
-        
+    def __init__(self, factory):
+        self.mana = factory.core_object
+       
     def connectionMade(self):
         self.mana.addClient(self)
 
@@ -52,30 +55,32 @@ class Server(Protocol):
         self.mana.delClient(self)
 
     def dataReceived(self, data):
+        
         ret = self.mana.recData(data)
         self.sendData(ret)
         if ret[:5] == 'VALUE':
             self.sendData('END')
-
+        
     def sendData(self, data):
         self.transport.write(data + '\r\n')
-
-        
-class ServerFactory(ServerFactory):
-
-    def __init__(self):
-        pass
+       
+class SFactory(ServerFactory):
     
+    def __init__(self, core_object):
+        self.core_object = core_object
+
     def buildProtocol(self, addr):
-        return Server()
-    
+        return A_Protocol(self) 
+
 def acrcloud_monitor_service():
     try:
         port = config['server']['port']
-        reactor.listenTCP(port, ServerFactory())
+        core_object = core_obj()
+        factory = SFactory(core_object)
+        reactor.listenTCP(port, factory)
         reactor.run()
     except Exception as e:
         traceback.print_exc()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     acrcloud_monitor_service()

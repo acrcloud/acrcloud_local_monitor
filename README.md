@@ -7,7 +7,7 @@ Local **Bradcast Monitoring** System is used to monitor live radio streams on yo
 
 ## Requirements
 * Python 2.7
-* Works on Linux
+* Works on Linux/Windows
 * Follow one of the tutorials to create a project and get your host, access_key and access_secret.
 
  * [Broadcast Monitoring for Music](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-music/)
@@ -35,3 +35,38 @@ Local **Bradcast Monitoring** System is used to monitor live radio streams on yo
 3. [beautifulsoup4](https://pypi.python.org/pypi/beautifulsoup4)
 4. [MySQL-Python](https://pypi.python.org/pypi/MySQL-python)
 
+##Install on Windows
+
+1. Install Windows Runtime Library
+    
+    X86: [download and install Library(vcredist_x86.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=5555)
+    x64: [download and install Library(vcredist_x64.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=14632)
+
+2. Install [Mysql](https://dev.mysql.com/downloads/installer/) on your windows
+3. Install [Python](https://www.python.org/downloads/)
+4. Install Python Dependency Library(in acrcloud_local_monitor direction and run the script)
+    
+    `.\install_python_packages_for_windows.bat`
+
+5. Install [mysql_python]
+    
+    a. Open [https://www.lfd.uci.edu/~gohlke/pythonlibs/](https://www.lfd.uci.edu/~gohlke/pythonlibs/#mysql-python)
+    b. Find and Download:
+
+        `MySQL_python‑1.2.5‑cp27‑none‑win32.whl (or MySQL_python‑1.2.5‑cp27‑none‑win_amd64.whl)`
+
+    c. `python -m pip install MySQL_python‑1.2.5‑cp27‑none‑win32.whl`
+    d. `python -m pip install mysql-python`        
+
+5. Copy the ACRCloud Library into the acrcloud_local_monitor direction according to your system.
+
+    X86: copy from winlibs/win32/acrcloud_stream_decode.pyd to acrcloud_local_monitor direction
+    X64: copy from winlibs/win64/acrcloud_stream_decode.pyd to acrcloud_local_monitor direction
+
+6. If you have created Local Project and add some streams, config the acrcloud_config.py with your access_key, and mysql information, then start the local server
+
+    `python acrcloud_local_server.py`
+
+7. Stop the local monitor server
+
+    `python acrcloud_stop.py` and Ctrl-C

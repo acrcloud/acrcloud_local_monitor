@@ -218,6 +218,7 @@ class Acrcloud_Rec_Pool:
         self.delWorkers()
         self._running = False
         self._dlog.logger.warn('Warn@Acrcloud_Recoginze_Pool_Stop')
+        sys.exit(1)
 
 
 def poolWorker(rec_pool_id, poolqueue, resultqueue, shareDict, config):
@@ -262,6 +263,7 @@ class Acrcloud_Rec_Manager:
                                                           self._resultQueue,
                                                           self._shareDict,
                                                           self._config))
+                pool_proc.daemon = True
                 pool_proc.start()
                 if not pool_proc.is_alive():
                     self._dlog.logger.error('Error@initPoolWorkers.init_rec_pool:{0}.failed'.format(i))
@@ -321,3 +323,4 @@ class Acrcloud_Rec_Manager:
         self.delPoolWorkers()
         self._running = False
         self._dlog.logger.warn('Warn@Acrcloud_Recoginze_Manager_Stop')
+        sys.exit(1)

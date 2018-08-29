@@ -25,6 +25,7 @@ from acrcloud_logger import AcrcloudLogger
 from acrcloud_result import Acrcloud_Result
 from acrcloud_config import config
 
+
 reload(sys)
 sys.setdefaultencoding("utf8")
 
@@ -495,6 +496,7 @@ class AcrcloudMonitor:
                                                      self.shareStatusDict,
                                                      self.shareDict,
                                                      self.config))
+                proc.daemon = True
                 proc.start()
                 if proc.is_alive():
                     self.procDict[stream_id] = [proc, mainqueue]
@@ -550,6 +552,7 @@ class AcrcloudMonitor:
                                                              self.shareStatusDict,
                                                              self.shareDict,
                                                              self.config))
+                        proc.daemon = True
                         proc.start()
                         if proc.is_alive():
                             self.procDict[stream_id][0] = proc
@@ -647,5 +650,8 @@ def ResWorker(mainqueue, resultqueue, config):
     sWorker = Acrcloud_Result(mainqueue, resultqueue, config)
     sWorker.start()
 
-acrcloudMana = AcrcloudManager(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker))
+
+def core_obj():
+    return AcrcloudManager(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker))
+
 
