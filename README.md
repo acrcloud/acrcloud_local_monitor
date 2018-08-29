@@ -31,9 +31,10 @@ Local **Bradcast Monitoring** System is used to monitor live radio streams on yo
 
 ## Python Dependency Library
 1. [Twisted](https://github.com/twisted/twisted)
-2. [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy)
-3. [beautifulsoup4](https://pypi.python.org/pypi/beautifulsoup4)
-4. [MySQL-Python](https://pypi.python.org/pypi/MySQL-python)
+2. [requests](https://pypi.org/project/requests/)
+3. [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy)
+4. [beautifulsoup4](https://pypi.python.org/pypi/beautifulsoup4)
+5. [MySQL-Python](https://pypi.python.org/pypi/MySQL-python)
 
 
 ## Install on Windows
