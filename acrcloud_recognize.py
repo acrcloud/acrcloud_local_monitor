@@ -78,7 +78,15 @@ class Acrcloud_Rec_Worker(threading.Thread):
                                                  stream_info[1],
                                                  stream_info[3],
                                                  stream_info[4])
-                json_res = json.loads(res)
+                try:
+                    json_res = json.loads(res)
+                except Exception as e:
+                    self._dlogger.error("Error@PoolID:{0}.Worker_Recognize({1}).ParseJson.res:{2}".format(
+                                                                                                self._rec_pool_id,
+                                                                                                self._worker_num,
+                                                                                                res))
+                    continue
+
                 if 'response' in json_res and json_res['response']['status']['code'] == 0:
                     result['result'] = json_res
                     self.callback_fun(result)
