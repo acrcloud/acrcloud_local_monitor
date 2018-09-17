@@ -6,7 +6,7 @@ CREATE TABLE `result_info` (
   `access_key` varchar(200) NOT NULL,
   `stream_url` varchar(200) NOT NULL,
   `stream_id` varchar(200) NOT NULL,
-  `result` text NOT NULL,
+  `result` MEDIUMTEXT NOT NULL,
   `timestamp` datetime NOT NULL,
   `catchDate` date NOT NULL,
 

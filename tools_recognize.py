@@ -65,7 +65,7 @@ class acrcloud_recognize:
     def gen_fp(self, buf, rate=0):
         return acrcloud_stream_decode.create_fingerprint(buf, False, 50)
 
-    def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=5):
+    def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=8):
         http_method = "POST"
         http_url_file = "/v1/monitor/identify" #"/v1/identify"
         data_type = query_type
@@ -88,7 +88,7 @@ class acrcloud_recognize:
         res = self.post_multipart(server_url, fields, {"sample" : query_data}, timeout)
         return res
 
-    def recognize(self, host, wav_buf, query_type, stream_id, access_key, access_secret, timeout=5, isCheck=False):
+    def recognize(self, host, wav_buf, query_type, stream_id, access_key, access_secret, timeout=8, isCheck=False):
         try:
             res = ''
             pcm_buf = self.gen_fp(wav_buf, self.rate)
