@@ -58,7 +58,7 @@ class Worker_CollectData(threading.Thread):
         self.setDaemon(True)
 
     def getTimestamp(self, monitor_seconds=0):
-        nowtime = datetime.datetime.now()
+        nowtime = datetime.datetime.utcnow()
         dsec = datetime.timedelta(seconds=monitor_seconds)
         nowtime = nowtime - dsec
         return nowtime.strftime('%Y-%m-%d %H:%M:%S')

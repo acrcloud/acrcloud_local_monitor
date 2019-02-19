@@ -393,7 +393,7 @@ class ResultFilter:
         return is_contain, latter_data_swaped
 
     def real_check_title_custom(self, stream_id, title):
-        now_timestamp = datetime.datetime.now()
+        now_timestamp = datetime.datetime.utcnow()
         if stream_id not in self._real_custom:
             self._real_custom[stream_id] = [[('','')], '']
 
