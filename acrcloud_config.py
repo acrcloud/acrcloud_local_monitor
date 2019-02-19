@@ -3,7 +3,7 @@ config = {
         "port":3005, #Local Monitor Server Port
     },
     "user":{
-        #ACRCloud Broadcast Monitoring, Local Project Access_Key And Access_Secret
+        #ACRCloud Broadcast Monitoring, Local Project Access_Key
         "access_key":"XXXXXXXX",
         #API URL To Get The Local Monitor Streams Info
         "api_url":"https://api.acrcloud.com/v1/local-monitor-streams?access_key={0}",
