@@ -23,10 +23,10 @@ class MonitorClient:
         print self.mc.set('stop', '')
 
     def state(self, id):
-        state = self.mc.get('state-'+str(id))
+        state = self.mc.get('state:'+str(id))
         jsonstate = json.loads(state)
         print jsonstate
-        
+
     def start(self):
         while 1:
             cmd = raw_input("(1.refresh, 2.restart, 3.state, 4.pause, 5.stop): ")
@@ -43,7 +43,7 @@ class MonitorClient:
                 self.pause(id.strip())
             elif cmd == '5':
                 self.stop()
-        
+
 
 if __name__ == '__main__':
     mc = MonitorClient()

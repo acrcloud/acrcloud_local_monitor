@@ -97,8 +97,8 @@ class AcrcloudManager:
             cmd_info = datainfo[0].split()
             if cmd_info[0] == 'get':
                 ret = ''
-                if cmd_info[1].startswith('state-'):
-                    id = cmd_info[1].split('-')[1]
+                if cmd_info[1].startswith('state:'):
+                    id = cmd_info[1].split(':')[1]
                     sd = self.monitor.getStat(id.strip())
                     return 'VALUE {0} 0 {1}\r\n{2}'.format(cmd_info[1], len(sd), sd)
                 else:
