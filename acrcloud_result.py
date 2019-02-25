@@ -785,7 +785,7 @@ class ResultFilter:
             stream_id = data.get("stream_id")
             timestamp = data.get("timestamp")
             #title_list = self.get_mutil_result_title(data, 'custom')
-            title_list = self.get_mutil_result_acrid(data, 'custom', 1)
+            title_list = self.get_mutil_result_acrid(data, 'custom', 8)
             if stream_id not in self._delay_custom:
                 self._delay_custom[stream_id] = [(title_list, timestamp, data)]
             else:
