@@ -271,7 +271,7 @@ class AcrcloudSpringboard:
                 if not stream_id:
                     continue
                 self.shareStatusDict[stream_id] = ['0#refresh', '2#unknow']
-                self.shareDict['filter_chinese_'+stream_id] = jsoninfo.get('filter_chinese', 1)
+                self.shareDict['filter_chinese_'+stream_id] = jsoninfo.get('filter_chinese', 0)
                 self.shareDict['delay_'+stream_id] = int(jsoninfo.get('delay', 1))
                 createTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
                 new_stream_ids.add(stream_id)
@@ -385,7 +385,7 @@ class AcrcloudSpringboard:
         radiostat["record"] = self.shareDict.get('record_'+stream_id, [0,0,0])[0]
         radiostat["record_before"] = self.shareDict.get('record_'+stream_id, [0,0,0])[1]
         radiostat["record_after"] = self.shareDict.get('record_'+stream_id, [0,0,0])[2]
-        radiostat["filter_lan"] = self.shareDict.get('filter_chinese_'+stream_id, 1)
+        radiostat["filter_lan"] = self.shareDict.get('filter_chinese_'+stream_id, 0)
         isVideo, ismsg = self.shareStatusDict[stream_id][1].split("#")
         if isVideo == "0":
             radiostat["type"] = "audio"
