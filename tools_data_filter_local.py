@@ -32,7 +32,7 @@ class ResultFilter:
         self._delay_music_last_result = {}
         self._delay_music_interval_threshold = 2*60
         self._delay_custom = {}
-        self._delay_custom_played_duration_min = 2
+        self._delay_custom_played_duration_min = 1
         self._delay_music_played_duration_min = 5
         self._delay_list_max_num = 35
         self._delay_list_threshold = 70
@@ -890,6 +890,8 @@ class ResultFilter:
                 judge_size = 10
             if judge_size <= 3:
                 judge_size = 3
+                if itype == "custom":
+                    judge_size = 1
         except Exception as e:
             self._dlog.logger.error("Error@delay_dynamic_judge_size", exc_info=True)
         return judge_size+1
