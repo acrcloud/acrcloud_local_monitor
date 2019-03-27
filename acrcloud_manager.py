@@ -120,6 +120,7 @@ class AcrcloudSpringboard:
         self.access_key = self.config['user']['access_key']
         #self.access_secret = self.config['user']['access_secret']
         self.api_url = self.config['user']['api_url']
+        self.stream_ids = self.config.get("stream_ids", [])
         self.record = int(self.config['record']['record'])
         self.record_before = int(self.config['record']['record_before'])
         self.record_after = int(self.config['record']['record_after'])
@@ -197,9 +198,14 @@ class AcrcloudSpringboard:
                     response.close()
         return ''
 
-    def getStreamInfo(self, api_url, access_key):
+    def getStreamInfo(self, api_url, access_key, stream_ids=[]):
         try:
             url = api_url.format(access_key)
+
+            stream_ids = [ sid.strip() for sid in stream_ids if sid.strip()]
+            if len(stream_ids) > 0:
+                url += "&stream_ids=" + ",".join(stream_ids)
+
             datainfo = self.getPage(url)
             streaminfo = json.loads(datainfo)
             return json.dumps(streaminfo)
@@ -208,7 +214,7 @@ class AcrcloudSpringboard:
 
     def initStreams(self):
         try:
-            stream_data = self.getStreamInfo(self.api_url, self.access_key)
+            stream_data = self.getStreamInfo(self.api_url, self.access_key, self.stream_ids)
             info_list = json.loads(stream_data)
 
             #get access_secret
