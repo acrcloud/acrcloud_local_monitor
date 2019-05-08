@@ -108,6 +108,13 @@ class Worker_DownloadStream(threading.Thread):
         self._Runing = True
         self.setDaemon(True)
 
+        self._callback_timeseconds = int(time.time())
+        self._callback_interval_threshold = int(self._read_size_sec*0.5)
+        self._callback_count = 0
+        self._callback_count_threshold = 5
+        self._callback_sleep_max_sec = self._read_size_sec
+        self._callback_sleep_unit = int(self._callback_sleep_max_sec/self._callback_count_threshold)
+
     def parsePLS(self, url):
         plslist = []
         pageinfo = self.getPage(url)
@@ -237,7 +244,20 @@ class Worker_DownloadStream(threading.Thread):
                 isvideo = res_dict.get('is_video', None)
                 buf = res_dict.get('audio_data', None)
                 if isvideo is not None and buf is not None:
+                    tmp_timeseconds = int(time.time())
+                    diff_seconds = tmp_timeseconds - self._callback_timeseconds
+                    if diff_seconds < self._callback_interval_threshold:
+                        if random.random() < 0.1:
+                           self._dlog.logger.warning('Warn@Worker_DownloadStream.callback_new.call interval too short:{0}'.format(diff_seconds))
+                        self._callback_count += 1
+                        if self._callback_count > self._callback_count_threshold:
+                            time.sleep(self._callback_sleep_max_sec)
+                        else:
+                            time.sleep(self._callback_count * self._callback_sleep_unit)
+                    else:
+                        self._callback_count = 0
                     ret_code = self.callback(int(isvideo), buf)
+                    self._callback_timeseconds = int(time.time())
                 else:
                     self._dlog.logger.error('Error@Worker_DownloadStream.callback_new.isvideo_or_buf_isNone')
                     time.sleep(5)
