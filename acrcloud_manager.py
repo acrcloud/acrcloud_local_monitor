@@ -468,6 +468,7 @@ class AcrcloudMonitor:
         self.initLog()
         self.initRec()
         self.initRes()
+        self.initFresh()
 
     def initLog(self):
         self.colorfmt = "$MAGENTA%(asctime)s - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
