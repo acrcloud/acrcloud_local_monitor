@@ -260,8 +260,7 @@ class AcrcloudSpringboard:
             #get access_secret
             access_secret = info_list.get("access_secret", "contact@acrcloud.com")
             if not access_secret:
-                self.dlog.logger.error("Error@Springboard.reFresh.get access_secret failed, exit!")
-                sys.exit(1)
+                self.dlog.logger.error("Error@Springboard.reFresh.get access_secret failed")
             else:
                 self.dlog.logger.warn("Warn@Springboard.reFresh.get access_info success")
 
