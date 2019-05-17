@@ -17,6 +17,8 @@ import urllib
 import urllib2
 import logging
 import traceback
+import datetime
+import tools_memcache
 import multiprocessing
 
 from acrcloud_worker import AcrcloudWorker
@@ -409,6 +411,37 @@ class AcrcloudSpringboard:
             self.dlog.logger.error('Error@Springboard.stop_stream', exc_info=True)
         return 'NOT_STORED'
 
+
+class Worker_AutoF(threading.Thread):
+
+    def __init__(self, config, dlog):
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
+        self.config = config
+        self.port = self.config.get("server", {"port":3005}).get("port", 3005)
+        self.dlog = dlog
+        self.mc = None
+        self.fresh_interval = 24*60*60
+        self.update_tobj = datetime.datetime.utcnow()
+        self.dlog.logger.warn("Init AF success!")
+
+    def init_mc(self):
+        self.mc = tools_memcache.Client(["127.0.0.1:{0}".format(self.port)])
+
+    def run(self):
+        while 1:
+            try:
+                time.sleep(30*60)
+                now_tobj = datetime.datetime.utcnow()
+                diff_sec = (now_tobj - self.update_tobj).total_seconds()
+                if diff_sec >= self.fresh_interval:
+                    self.update_tobj = now_tobj
+                    self.init_mc()
+                    self.mc.set('refresh', '')
+            except Exception as e:
+                self.dlog.logger.error("Error@Worker_AutoF", exc_info=True)
+                time.sleep(10*60)
+
 class AcrcloudMonitor:
 
     def __init__(self, mainQueue, config,
@@ -468,6 +501,15 @@ class AcrcloudMonitor:
             sys.exit(1)
         else:
             self.dlog.logger.warn('Warn@AcrcloudMonitor.init_result.success')
+
+    def initFresh(self):
+        self.fresh_proc = Worker_AutoF(self.config, self.dlog)
+        self.fresh_proc.start()
+        if not self.fresh_proc.is_alive():
+            self.dlog.logger.error('Error@AcrcloudMonitor.init_fresh.failed')
+            sys.exit(1)
+        else:
+            self.dlog.logger.warn('Warn@AcrcloudMonitor.init_fresh.success')
 
     def checkInfo(self, info):
         if len(info) >= 8:
