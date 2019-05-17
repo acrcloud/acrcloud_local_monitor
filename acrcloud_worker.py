@@ -248,7 +248,7 @@ class Worker_DownloadStream(threading.Thread):
                     diff_seconds = tmp_timeseconds - self._callback_timeseconds
                     if diff_seconds < self._callback_interval_threshold:
                         if random.random() < 0.1:
-                           self._dlog.logger.warning('Warn@Worker_DownloadStream.callback_new.call interval too short:{0}'.format(diff_seconds))
+                           self._dlogger.warning('Warn@Worker_DownloadStream.callback_new.call interval too short:{0}'.format(diff_seconds))
                         self._callback_count += 1
                         if self._callback_count > self._callback_count_threshold:
                             time.sleep(self._callback_sleep_max_sec)
@@ -259,10 +259,10 @@ class Worker_DownloadStream(threading.Thread):
                     ret_code = self.callback(int(isvideo), buf)
                     self._callback_timeseconds = int(time.time())
                 else:
-                    self._dlog.logger.error('Error@Worker_DownloadStream.callback_new.isvideo_or_buf_isNone')
+                    self._dlogger.error('Error@Worker_DownloadStream.callback_new.isvideo_or_buf_isNone')
                     time.sleep(5)
         except Exception as e:
-            self._dlog.logger.error('Error@Worker_DownloadStream.callback_new', exc_info=True)
+            self._dlogger.error('Error@Worker_DownloadStream.callback_new', exc_info=True)
         return ret_code
 
     def produce_data(self):
