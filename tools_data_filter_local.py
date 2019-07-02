@@ -761,9 +761,23 @@ class ResultFilter:
                     self._dlog.logger.warn("Warn@stream_id:{0}, mix_duration({1}) > duration_s({2})+60, replace to duration_accurate({3})".format(stream_id, mix_duration, duration_s, duration_accurate))
             retdata['result']['metadata']['played_duration'] = abs(ret_duration)
             retdata['result']['metadata']['timestamp_utc'] = accurate_timestamp_utc
+            retdata['result']['metadata']['timestamp_local'] = self.utc2local(accurate_timestamp_utc)
+
             if ret_duration == 0:
                 retdata = None
         return retdata
+
+    def utc2local(self, utc_str):
+        try:
+            local_str = ""
+            utc = datetime.datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S")
+            epoch = time.mktime(utc.timetuple())
+            offset = datetime.datetime.fromtimestamp (epoch) - datetime.datetime.utcfromtimestamp (epoch)
+            local = utc + offset
+            local_str = local.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            self._dlog.logger.error("Error@utc2local, utc:{0}".format(utc_str), exc_info=True)
+        return local_str
 
     def deal_real_custom(self, data):
         is_new = False
