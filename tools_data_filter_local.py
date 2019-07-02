@@ -1062,6 +1062,7 @@ class ResultFilter:
             accurate_timestamp_utc = duration_dict["accurate_timestamp_utc"]
             ret_data['result']['metadata']['played_duration'] = abs(mix_duration)
             ret_data['result']['metadata']['timestamp_utc'] = accurate_timestamp_utc
+            ret_data['result']['metadata']['timestamp_local'] = self.utc2local(accurate_timestamp_utc)
             score, duration_sec =  self.get_score_duration_ms(ret_data)
             if ret_data['result']['metadata']['played_duration'] > duration_sec+10:
                 ret_data['result']['metadata']['played_duration'] = duration_sec+int(random.random()*5)
@@ -1382,6 +1383,7 @@ class ResultFilter:
             accurate_timestamp_utc = duration_dict["accurate_timestamp_utc"]
             ret_data['result']['metadata']['played_duration'] = mix_duration
             ret_data['result']['metadata']['timestamp_utc'] = accurate_timestamp_utc
+            ret_data['result']['metadata']['timestamp_local'] = self.utc2local(accurate_timestamp_utc)
             score = self.get_music_score(ret_data)
             if score > 0:
                 if mix_duration < 5 and score < 85:
