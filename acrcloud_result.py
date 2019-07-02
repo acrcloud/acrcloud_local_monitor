@@ -285,7 +285,7 @@ class Backup:
                 self.dlog.logger.error("Error@save_one_delay.db_execute", exc_info=True)
         return False
 
-    def utc2local(utc_str):
+    def utc2local(self, utc_str):
         try:
             local_str = ""
             utc = datetime.datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S")
