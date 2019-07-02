@@ -285,13 +285,28 @@ class Backup:
                 self.dlog.logger.error("Error@save_one_delay.db_execute", exc_info=True)
         return False
 
+    def utc2local(utc_str):
+        try:
+            local_str = ""
+            utc = datetime.datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S")
+            epoch = time.mktime(utc.timetuple())
+            offset = datetime.datetime.fromtimestamp (epoch) - datetime.datetime.utcfromtimestamp (epoch)
+            local = utc + offset
+            local_str = local.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception as e:
+            self.dlog.logger.error("Error@utc2local, utc:{0}".format(utc_str), exc_info=True)
+        return local_str
+
     def save_one(self, jsondata):
         try:
             timestamp = jsondata['timestamp']
+            local_timestamp = self.utc2local(timestamp)
             if jsondata['result']['status']['code'] != 0:
                 jsondata['result']['metadata'] = {'timestamp_utc':timestamp}
+                jsondata['result']['metadata'] = {'timestamp_local':local_timestamp}
             elif 'metadata' in jsondata['result']:
                 jsondata['result']['metadata']['timestamp_utc'] = timestamp
+                jsondata['result']['metadata']['timestamp_local'] = local_timestamp
 
             ret = False
             if jsondata.get('delay') == 0 or jsondata.get('delay') == False:
