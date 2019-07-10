@@ -527,11 +527,11 @@ class AcrcloudWorker:
             if self.killedflag:
                 killedpassTime = (datetime.datetime.now() - self.killedTime).seconds
                 if self.killedcount in range(1, 6):
-                    self.killed_reborn_hours = pow(2, self.killedcount-1)
+                    self.killed_reborn_hours = 0.5#pow(2, self.killedcount-1)
                 elif self.killedcount >= 6:
-                    self.killed_reborn_hours = pow(2, 5)
+                    self.killed_reborn_hours = 0.5#pow(2, 5)
                 else :
-                    self.killed_reborn_hours = 1
+                    self.killed_reborn_hours = 0.5#1
                 if killedpassTime % 1000 == 0:
                     self._dlog.logger.warn("Killed Worker Reborn Time: {0}/{1} (hours)".format(round(killedpassTime/3600.0, 2), self.killed_reborn_hours))
                 if  killedpassTime >= self.killed_reborn_hours*3600:
