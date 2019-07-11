@@ -306,7 +306,9 @@ class AcrcloudSpringboard:
 
     def gen_monitor_str(self, jsoninfo):
         key_list = ['monitor_length', 'interval', 'monitor_timeout', 'rec_timeout']
-        monitor_str_list = [jsoninfo.get('rec_host', ''), jsoninfo.get('stream_url', '')]
+        stream_urls =  ",".join( sorted( list(set(jsoninfo.get('stream_urls', []))) ) )
+        stream_spare_urls = ",".join( sorted( list(set(jsoninfo.get('stream_spare_urls', []))) ) )
+        monitor_str_list = [jsoninfo.get('rec_host', ''), jsoninfo.get('stream_url', ''), stream_urls, stream_spare_urls ]
         for key in key_list:
             value = jsoninfo.get(key, 0)
             if value is True:
