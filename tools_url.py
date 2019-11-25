@@ -119,7 +119,8 @@ class Tools_Url:
                 response.close()
                 return result
         except Exception, e:
-            traceback.print_exc()
+            #traceback.print_exc()
+            print "getContentType.url:{0}, error: {1}".format(url, str(e))
             if response:
                 response.close()
         return ''
