@@ -92,7 +92,7 @@ I
 
     * `cd acrcloud_local_monitor`
 
-    *  Change the config file "acrcloud_config.py", fill in your "access_key", and mysql setting(host, port, user, passwd), **if Mysql was installed in your computer, please create a remote user and set field "host" to "host.docker.internal"**
+    *  Change the config file "acrcloud_config.py", fill in your project "access_key", and mysql setting(host, port, user, passwd), **if Mysql was installed in your computer, please create a remote user and set field "host" to your private IP(ifconfig in Linux or ipconfig in Windows, "host.docker.internal" in Mac OS)**
 
     * `docker build -t acrcloud/acr_local_monitor_image:v1 .`
 
