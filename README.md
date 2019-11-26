@@ -80,16 +80,16 @@ I
 
 ## Run as a Docker Container
 
-    1. Install Docker
+1. Install Docker
 
-        * If you are using Windows: Download [Docker Desktop for Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe) and install.
-        * If you are using MacOs: Download [Docker Desktop for Mac](https://download.docker.com/mac/stable/Docker.dmg) and install.
-        * If you are using Linux: Open the Terminal and input bash <(curl -s https://get.docker.com/)
+    * If you are using Windows: Download [Docker Desktop for Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe) and install.
+    * If you are using MacOs: Download [Docker Desktop for Mac](https://download.docker.com/mac/stable/Docker.dmg) and install.
+    * If you are using Linux: Open the Terminal and input bash <(curl -s https://get.docker.com/)
 
-    2. Run following command
+2. Run following command
 
-        * `git clone https://github.com/acrcloud/acrcloud_local_monitor`
-        * `cd acrcloud_local_monitor`
-        * Change the config file "acrcloud_config.py", fill in your "access_key", and mysql setting(host, port, user, passwd),  if you use docker and mysql was installed in your computer, please create a remote user and set field "host" to "host.docker.internal"
-        * `docker build -t acrcloud/acr_local_monitor_image:v1 .`
-        * `docker run --rm -itv /<Change to your directory>/acrcloud_local_monitor:/docker_local_monitor --name="acr_local_monitor" acrcloud/acr_local_monitor_image:v1 /bin/bash -c "python acrcloud_local_server.py"`
+    * `git clone https://github.com/acrcloud/acrcloud_local_monitor`
+    * `cd acrcloud_local_monitor`
+    *  **Change the config file "acrcloud_config.py", fill in your "access_key", and mysql setting(host, port, user, passwd),  if you use docker and mysql was installed in your computer, please create a remote user and set field "host" to "host.docker.internal"**
+    * `docker build -t acrcloud/acr_local_monitor_image:v1 .`
+    * `docker run --rm -itv /<Change to your directory>/acrcloud_local_monitor:/docker_local_monitor --name="acr_local_monitor" acrcloud/acr_local_monitor_image:v1 /bin/bash -c "python acrcloud_local_server.py"`
