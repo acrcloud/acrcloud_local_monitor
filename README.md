@@ -1,12 +1,12 @@
 # Broadcast Monitoring - ACRCloud Local Service
 
 ## Overview
-I  [ACRCloud](https://www.acrcloud.com/) provides [Automatic Content Recognition](https://www.acrcloud.com/docs/introduction/automatic-content-recognition/) services for [Audio Fingerprinting](https://www.acrcloud.com/docs/introduction/audio-fingerprinting/) based applications such as **[Audio Recognition](https://www.acrcloud.com/music-recognition)** (supports music, video, ads for both online and offline), **[Broadcast Monitoring](https://www.acrcloud.com/broadcast-monitoring)**, **[Second Screen](https://www.acrcloud.com/second-screen-synchronization)**, **[Copyright Protection](https://www.acrcloud.com/copyright-protection-de-duplication)** and etc.<br>
+    I  [ACRCloud](https://www.acrcloud.com/) provides [Automatic Content Recognition](https://www.acrcloud.com/docs/introduction/automatic-content-recognition/) services for [Audio Fingerprinting](https://www.acrcloud.com/docs/introduction/audio-fingerprinting/) based applications such as **[Audio Recognition](https://www.acrcloud.com/music-recognition)** (supports music, video, ads for both online and offline), **[Broadcast Monitoring](https://www.acrcloud.com/broadcast-monitoring)**, **[Second Screen](https://www.acrcloud.com/second-screen-synchronization)**, **[Copyright Protection](https://www.acrcloud.com/copyright-protection-de-duplication)** and etc.<br>
   
 Local **Bradcast Monitoring** System is used to monitor live radio streams on your own local server. [Learn More](https://www.acrcloud.com/docs/acrcloud-services/for-pc-server/radio-airplay-monitoring-music/#server-location)
 
 ## Requirements
-* Python 2.7
+* Py    thon 2.7
 * Works on Linux/Windows
 * Follow one of the tutorials to create a project and get your host, access_key.
 
@@ -16,7 +16,7 @@ Local **Bradcast Monitoring** System is used to monitor live radio streams on yo
 
 I
 ## How To Use
-1. You should register an account on the [ACRCloud platform](https://console.acrcloud.com/), and create a [Broadcast Monitoring project](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-music/) with local monitoring type, you will get access_key, then add your live radio streams in your project.
+1. You s    hould register an account on the [ACRCloud platform](https://console.acrcloud.com/), and create a [Broadcast Monitoring project](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-music/) with local monitoring type, you will get access_key, then add your live radio streams in your project.
 2. Clone the code in your local server.
 3. Install MySQL, import acrcloud_database.sql to your mysql server. `$mysql -uroot -p < acrcloud_database.sql`.
 4. Modify configuration file (acrcloud_config.py), fill access_key, access_secret and database info in the config file.
@@ -76,3 +76,20 @@ I
 9. Stop the local monitor server
 
     `python acrcloud_stop.py` and Ctrl-C
+
+
+## Run as a Docker Container
+
+    1. Install Docker
+
+        * If you are using Windows: Download [Docker Desktop for Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe) and install.
+        * If you are using MacOs: Download [Docker Desktop for Mac](https://download.docker.com/mac/stable/Docker.dmg) and install.
+        * If you are using Linux: Open the Terminal and input bash <(curl -s https://get.docker.com/)
+
+    2. Run following command
+
+        * `git clone https://github.com/acrcloud/acrcloud_local_monitor`
+        * `cd acrcloud_local_monitor`
+        * Change the config file "acrcloud_config.py", fill in your "access_key", and mysql setting(host, port, user, passwd),  if you use docker and mysql was installed in your computer, please create a remote user and set field "host" to "host.docker.internal"
+        * `docker build -t acrcloud/acr_local_monitor_image:v1 .`
+        * `docker run --rm -itv /<Change to your directory>/acrcloud_local_monitor:/docker_local_monitor --name="acr_local_monitor" acrcloud/acr_local_monitor_image:v1 /bin/bash -c "python acrcloud_local_server.py"`
