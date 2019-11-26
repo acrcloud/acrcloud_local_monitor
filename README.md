@@ -90,6 +90,6 @@ I
 
     * `git clone https://github.com/acrcloud/acrcloud_local_monitor`
     * `cd acrcloud_local_monitor`
-    *  **Change the config file "acrcloud_config.py", fill in your "access_key", and mysql setting(host, port, user, passwd),  if you use docker and mysql was installed in your computer, please create a remote user and set field "host" to "host.docker.internal"**
+    *  Change the config file "acrcloud_config.py", fill in your "access_key", and mysql setting(host, port, user, passwd), **if Mysql was installed in your computer, please create a remote user and set field "host" to "host.docker.internal"**
     * `docker build -t acrcloud/acr_local_monitor_image:v1 .`
     * `docker run --rm -itv /<Change to your directory>/acrcloud_local_monitor:/docker_local_monitor --name="acr_local_monitor" acrcloud/acr_local_monitor_image:v1 /bin/bash -c "python acrcloud_local_server.py"`
