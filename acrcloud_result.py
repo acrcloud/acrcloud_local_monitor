@@ -164,7 +164,6 @@ class Backup:
         if 'response' in old_data['result']:
             old_data['result'] = old_data['result']['response']
 
-        #从pem_file中清除pem_file
         old_data['pem_file'] = ''
 
         data = None
@@ -237,7 +236,6 @@ class Backup:
             record_add_data = copy.deepcopy(old_data)
             self._recordQueue.put(('add', record_add_data))
 
-        #从pem_file中清除pem_file
         old_data['pem_file'] = ''
 
         data = None
@@ -256,7 +254,7 @@ class Backup:
         if result and filter_chinese:
             result = self.filter_chinese(stream_id, result)
         if self._mdb and result:
-            data['result'] = result  #之前涉及到的拷贝都是浅拷贝，这里的修改会影响到浅拷贝的变量history
+            data['result'] = result
             try:
                 if (isCustom==0 and old_data.get('record', [0,0,0])[0] in [2,3]) or (isCustom==1 and old_data.get('record', [0,0,0])[0] in [1,3]):
                     self._recordQueue.put(('save', data))
