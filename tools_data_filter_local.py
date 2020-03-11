@@ -404,6 +404,30 @@ class ResultFilter:
             return new_title
         return title
 
+    def update_real_result_timestamp_utc(self, data, itype="music"):
+        try:
+            new_data = copy.deepcopy(data)
+            if "result" in new_data:
+                if new_data["result"]['status']['code'] == 0:
+                    if 'metadata' in new_data["result"]:
+                        timestamp_utc = new_data["result"]["metadata"]["timestamp_utc"]
+                        utc_tobj = datetime.datetime.strptime(timestamp_utc, "%Y-%m-%d %H:%M:%S")
+                        item = None
+                        sample_begin_sec = 0
+                        if itype == 'music' and 'music' in new_data["result"]['metadata']:
+                            if len(new_data["result"]['metadata']['music']) > 0:
+                                item = new_data["result"]['metadata']['music'][0]
+                        elif itype == 'custom' and 'custom_files' in new_data["result"]['metadata']:
+                            if len(new_data["result"]['metadata']['custom_files']) > 0:
+                                item = new_data["result"]['metadata']['custom_files'][0]
+                        if item and "sample_begin_time_offset_ms" in item:
+                            sample_begin_sec = int(int(item["sample_begin_time_offset_ms"])/1000)
+                            new_timestamp_utc = (utc_tobj + relativedelta(seconds=sample_begin_sec)).strftime("%Y-%m-%d %H:%M:%S")
+                            new_data["result"]["metadata"]["timestamp_utc"] = new_timestamp_utc
+        except Exception as e:
+            self._dlog.logger.error("Error@update_real_result_timestamp_utc", exc_info=True)
+        return new_data
+
     def deal_real_history(self, data):
         is_new = False
         result = None
@@ -429,6 +453,10 @@ class ResultFilter:
                 self._real_music[stream_id][1] = data
                 result = data
                 is_new = True
+
+        #通过offset更新timestamp_utc
+        if is_new and result:
+            result = self.update_real_result_timestamp_utc(result, "music")
 
         return result, is_new
 
@@ -789,6 +817,12 @@ class ResultFilter:
                 self._real_custom[stream_id][1] = data
                 result = data
                 is_new = True
+
+
+        #通过offset更新timestamp_utc
+        if is_new and result:
+            result = self.update_real_result_timestamp_utc(result, "custom")
+
         return result, is_new
 
     def deal_delay_custom(self, data):
