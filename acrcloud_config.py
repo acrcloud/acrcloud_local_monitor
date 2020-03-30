@@ -13,6 +13,7 @@ config = {
     "stream_ids":[],
     "database":{
         #Local Database Config
+        "enabled": 1, #1-enabled(default), 0-disabled
         "host":"127.0.0.1",
         "port":3306,
         "user":"root",

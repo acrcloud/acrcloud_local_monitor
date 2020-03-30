@@ -122,11 +122,13 @@ class Backup:
         self._callbackQueue = callbackQueue
         self._redis_map = {}
         self.dlog = dlog
-        self._mdb = MysqlManager(host=db_config["host"],
-                                 port=db_config["port"],
-                                 user=db_config["user"],
-                                 passwd=db_config["passwd"],
-                                 dbname=db_config["db"])
+        self._mdb = None
+        if db_config.get("enabled", 1) and db_config.get("host"):
+            self._mdb = MysqlManager(host=db_config["host"],
+                                     port=db_config["port"],
+                                     user=db_config["user"],
+                                     passwd=db_config["passwd"],
+                                     dbname=db_config["db"])
         self._log_dir = self._config["log"]["dir"]
         self._result_filter = ResultFilter(self.dlog, self._log_dir)
         self._tools_lan = tools_language.tools_language()
@@ -204,7 +206,7 @@ class Backup:
             if result and filter_chinese:
                 result = self.filter_chinese(stream_id, result)
 
-            if self._mdb and result:
+            if result:
                 data['result'] = result
 
                 #post result to callback url
@@ -214,17 +216,18 @@ class Backup:
                 except Exception as e:
                     self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
 
-                params = (access_key,
-                          stream_url,
-                          stream_id,
-                          json.dumps(result),
-                          data.get('timestamp'),)
-                try:
-                    self._mdb.execute(self._sql, params)
-                    self._mdb.commit()
-                    return True
-                except MySQLdb.Error as e:
-                    self.dlog.logger.error("Error@save_one_uniq.db_execute", exc_info=True)
+                if self._mdb:
+                    params = (access_key,
+                              stream_url,
+                              stream_id,
+                              json.dumps(result),
+                              data.get('timestamp'),)
+                    try:
+                        self._mdb.execute(self._sql, params)
+                        self._mdb.commit()
+                        return True
+                    except MySQLdb.Error as e:
+                        self.dlog.logger.error("Error@save_one_uniq.db_execute", exc_info=True)
         return False
 
     def save_one_delay(self, old_data, isCustom=0):
