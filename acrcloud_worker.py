@@ -303,7 +303,7 @@ class AcrcloudWorker:
             self._timeout_Threshold = 20 #self._config["server"]["timeout_Threshold"]
             self._rec_timeout = info.get('rec_timeout', 5)
             self.baseRebornTime = 20 #self._config["server"]["reborn_Time_Sec"]
-            self.rebornTime = 0
+            self.rebornTime = 10
             self.deadThreshold = 20 #self._config["server"]["dead_Threshold"]
             self.isFirst = True
 
@@ -434,7 +434,7 @@ class AcrcloudWorker:
                 self._dlog.logger.warn("cmdQueue receive 'DEAD' & JUST SLEEP")
                 self.nowStop()
                 self.deadcount += 1
-                self.rebornTime = 5*60 #self.baseRebornTime * self.deadcount
+                self.rebornTime = 2*60 #self.baseRebornTime * self.deadcount
                 self.deadflag = True
                 self.deadTime = datetime.datetime.now()
                 if self.deadcount >= self.deadThreshold:
@@ -461,6 +461,7 @@ class AcrcloudWorker:
                 self.killedcount = 0
         elif recv_thread.startswith("ISVIDEO"):
             self.changeStat(1, recv_thread[len('ISVIDEO#'):])
+        return isbreak
 
     def start(self):
         self.newStart()
@@ -504,12 +505,12 @@ class AcrcloudWorker:
             if self.killedflag:
                 killedpassTime = (datetime.datetime.now() - self.killedTime).seconds
                 if self.killedcount in range(1, 6):
-                    self.killed_reborn_hours = 0.5#pow(2, self.killedcount-1)
+                    self.killed_reborn_hours = 0.03#pow(2, self.killedcount-1)
                 elif self.killedcount >= 6:
-                    self.killed_reborn_hours = 0.5#pow(2, 5)
+                    self.killed_reborn_hours = 0.03#pow(2, 5)
                 else :
-                    self.killed_reborn_hours = 0.5#1
-                if killedpassTime % 500 == 0:
+                    self.killed_reborn_hours = 0.03#1
+                if killedpassTime % 120 == 0:
                     self._dlog.logger.warn("Killed Worker Reborn Time: {0}/{1} (hours)".format(round(killedpassTime/3600.0, 2), self.killed_reborn_hours))
                 if  killedpassTime >= self.killed_reborn_hours*3600:
                     self._dlog.logger.warn("Killed Worker Reborn...")
