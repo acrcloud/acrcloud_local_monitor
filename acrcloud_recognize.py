@@ -119,7 +119,7 @@ class Acrcloud_Rec_Worker(threading.Thread):
                                                                                                         stream_info[7]))
             except Exception as e:
                 self._dlogger.error('Error@PoolID:{0}.Worker_Recognize({0})'.format(self._rec_pool_id, self._worker_num), exc_info=True)
-                self._dlogger.error('Error@result: {0}'.format(json.dumps(result)))
+                self._dlogger.error('Error@stream_info: {0}'.format(stream_info[:2] if stream_info else "None" ))
 
     def stop(self):
         self._running = False
