@@ -96,4 +96,4 @@ I
 
     * `docker build -t acrcloud/acr_local_monitor_image:v1 .`
 
-    * `docker run --rm -itv /<Change to your directory>/acrcloud_local_monitor:/docker_local_monitor --name="acr_local_monitor" acrcloud/acr_local_monitor_image:v1 /bin/bash -c "python acrcloud_local_server.py"`
+    * `docker run --rm -itv /<Change to your directory>/acrcloud_local_monitor:/docker_local_monitor --name="acr_local_monitor" acrcloud/acr_local_monitor_image:v1`

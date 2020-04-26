@@ -11,3 +11,6 @@ RUN pip install MySQL-Python
 
 WORKDIR /docker_local_monitor
 
+COPY . .
+
+ENTRYPOINT ["/bin/bash", "run.sh"]
