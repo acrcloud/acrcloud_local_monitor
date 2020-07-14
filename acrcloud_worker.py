@@ -101,7 +101,7 @@ class Worker_DownloadStream(threading.Thread):
         self._downloadf = downloadf
         self._dlogger = dlogger
         self._read_size_sec = 5
-        self._open_timeout_sec = 20
+        self._open_timeout_sec = 30
         self._read_timeout_sec = timeout_sec
         self._timeout_Threshold = timeout_Threshold
         self._invalid_Threshlod = 3
