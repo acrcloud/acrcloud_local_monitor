@@ -142,6 +142,7 @@ class Worker_DownloadStream(threading.Thread):
                 self._cmdQueue.put("ISVIDEO#1#video")
             else:
                 self._cmdQueue.put("ISVIDEO#0#audio")
+            self._cmdQueue.put('STATUS#0#running')
             self._dlogger.warn("Get Stream Type: {0}".format('Video' if isvideo == 1 else 'Audio'))
             self._isFirst = False
         if buf:
@@ -217,8 +218,9 @@ class Worker_DownloadStream(threading.Thread):
             10, msg = "av_read_frame up timeout count";
             else, msg = "None";
             '''
+            if self._isFirst:
+                self._cmdQueue.put('STATUS#0#running')
 
-            self._cmdQueue.put('STATUS#0#running')
             code, msg = self.produce_data()
 
             if code == 0 or code == '0':
@@ -257,12 +259,13 @@ class Worker_DownloadStream(threading.Thread):
 
 class AcrcloudWorker:
 
-    def __init__(self, info, mainqueue, recqueue, shareStatusDict, shareDict, config):
+    def __init__(self, info, mainqueue, recqueue, statequeue, shareStatusDict, shareDict, config):
         self._info = info
         self._downloadFun = None
         self._config = config
         self._mainqueue = mainqueue
         self._recqueue = recqueue
+        self._statequeue = statequeue #send state to callback
         self._shareStatusDict = shareStatusDict
         self._shareDict = shareDict
         self._workQueue = Queue.Queue()
@@ -270,6 +273,18 @@ class AcrcloudWorker:
         self._downloadHandler = None
         self._collectHandler = None
         self._stream_id = str(info.get('stream_id', ''))
+        self._state_code_map = {
+            0: 'running',
+            1: 'timeout',
+            2: 'invalid_url',
+            3: 'invalid_url',
+            4: 'pause',
+            6: 'invalid_url',
+            10: 'delete',
+            12: 'mute',
+            101: 'delete'
+        }
+
         self.initLog()
         self.tools_url = Tools_Url()
         self.initConfig(info)
@@ -371,11 +386,6 @@ class AcrcloudWorker:
         except Exception as e:
             self._dlog.logger.error('Error@Worker_DownloadStream.change_stream_url, url_map: {0}'.format(self._url_map), exc_info=True)
 
-    def changeStat(self, index, msg):
-        stat = self._shareStatusDict[self._stream_id]
-        stat[index] = msg
-        self._shareStatusDict[self._stream_id] = stat
-
     def newStart(self):
         self._collectHandler = Worker_CollectData(self._rec_host,
                                                   self._stream_id,
@@ -404,6 +414,25 @@ class AcrcloudWorker:
         self._downloadHandler.start()
 
 
+    def changeStat(self, index, msg):
+        stat = self._shareStatusDict[self._stream_id]
+        stat[index] = msg
+        self._shareStatusDict[self._stream_id] = stat
+
+    def send_state(self, code):
+        try:
+            code = int(code)
+            if code in self._state_code_map:
+                s = {
+                    'stream_id': self._stream_id,
+                    'code': code,
+                    'state' : self._state_code_map[code],
+                    'timestamp' : datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+                }
+                self._statequeue.put(json.dumps(s))
+        except Exception as e:
+            self._dlog.logger.error("Error@send_state:{0}, state_code:{1}".format(self._stream_id, code), exc_info=True)
+
     def nowStop(self):
         self._downloadHandler.stop()
         self._collectHandler.stop()
@@ -413,12 +442,14 @@ class AcrcloudWorker:
         if  recv == 'STOP':
             self.nowStop()
             self._dlog.logger.warn("mainQueue receive 'STOP' & JUST STOP")
+            self.send_state(10)
             isbreak = True
         elif recv == 'PAUSE':
             self.pauseflag = True
             self.nowStop()
             self._dlog.logger.warn("mainQueue receive 'PAUSE' & JUST PAUSE")
             self.changeStat(0, "4#pause")
+            self.send_state(4)
         elif recv == 'RESTART':
             self.nowStop()
             self.newStart()
@@ -430,6 +461,7 @@ class AcrcloudWorker:
         if recv_thread.startswith("STATUS"):
             status = recv_thread.split("#")
             self.changeStat(0, recv_thread[len('STATUS#'):])
+            self.send_state(status[1])
             if status[1] == '2':
                 self._dlog.logger.warn("cmdQueue receive 'DEAD' & JUST SLEEP")
                 self.nowStop()

@@ -26,6 +26,7 @@ from acrcloud_worker import AcrcloudWorker
 from acrcloud_recognize import Acrcloud_Rec_Manager
 from acrcloud_logger import AcrcloudLogger
 from acrcloud_result import Acrcloud_Result
+from acrcloud_state import Acrcloud_State
 from acrcloud_config import config
 
 
@@ -114,12 +115,13 @@ class AcrcloudManager:
 
 class AcrcloudSpringboard:
 
-    def __init__(self, manager, config, dworker, rworker, sworker):
+    def __init__(self, manager, config, dworker, rworker, sworker, stateworker):
         self.manager = manager
         self.config = config
         self.dworker = dworker
         self.rworker = rworker
         self.sworker = sworker
+        self.stateworker = stateworker
         self.access_key = self.config['user']['access_key']
         #self.access_secret = self.config['user']['access_secret']
         self.api_url = self.config['user']['api_url']
@@ -153,7 +155,8 @@ class AcrcloudSpringboard:
                                                                 self.shareDict,
                                                                 self.dworker,
                                                                 self.rworker,
-                                                                self.sworker))
+                                                                self.sworker,
+                                                                self.stateworker))
             self.manager_proc.start()
             if not self.manager_proc.is_alive():
                 self.dlog.logger.error('Error@Springboard:create manager process failed, it will stop')
@@ -235,6 +238,13 @@ class AcrcloudSpringboard:
             self.shareDict["callback_type_"+self.access_key] = callback_type
             self.dlog.logger.warn("Warn@Springboard.initStreams.callback_info.(callback_url:{0}, callback_type:{1})".format(callback_url, callback_type))
 
+            #get state callback info
+            state_callback_url = info_list.get("state_callback_url", "")
+            state_callback_type = info_list.get("state_callback_type", 2) #1.Form, 2.Json
+            self.shareDict["state_callback_url_"+self.access_key] = state_callback_url
+            self.shareDict["state_callback_type_"+self.access_key] = state_callback_type
+            self.dlog.logger.warn("Warn@Springboard.initStreams.state_callback_info.(state_callback_url:{0}, state_callback_type:{1})".format(state_callback_url, state_callback_type))
+
             #parse jsoninfo to self.shareMonitorDict
             for jsoninfo in info_list.get('streams', []):
                 jsoninfo['access_key'] = self.access_key
@@ -270,6 +280,13 @@ class AcrcloudSpringboard:
             self.shareDict["callback_url_"+self.access_key] = callback_url
             self.shareDict["callback_type_"+self.access_key] = callback_type
             self.dlog.logger.warn("Warn@Springboard.reFresh.callback_info.(callback_url:{0}, callback_type:{1})".format(callback_url, callback_type))
+
+            #get state callback info
+            state_callback_url = info_list.get("state_callback_url", "")
+            state_callback_type = info_list.get("state_callback_type", 2) #1.Form, 2.Json
+            self.shareDict["state_callback_url_"+self.access_key] = state_callback_url
+            self.shareDict["state_callback_type_"+self.access_key] = state_callback_type
+            self.dlog.logger.warn("Warn@Springboard.initStreams.state_callback_info.(state_callback_url:{0}, state_callback_type:{1})".format(state_callback_url, state_callback_type))
 
             new_stream_ids = set()
             for jsoninfo in info_list.get('streams', []):
@@ -452,11 +469,13 @@ class AcrcloudMonitor:
                  shareDict,
                  dworker,
                  rworker,
-                 sworker):
+                 sworker,
+                 stateworker):
         self.recQueue = multiprocessing.Queue()
         self.recMainQueue = multiprocessing.Queue()
         self.resultQueue= multiprocessing.Queue()
         self.resMainQueue = multiprocessing.Queue()
+        self.stateQueue = multiprocessing.Queue() # send state to callback url
         self.springQueue = mainQueue
         self.config  = config
         self.shareMonitorDict = shareMonitorDict
@@ -466,9 +485,11 @@ class AcrcloudMonitor:
         self.dworker = dworker
         self.rworker = rworker
         self.sworker = sworker
+        self.stateworker = stateworker
         self.initLog()
         self.initRec()
         self.initRes()
+        self.initState()
         self.initFresh()
 
     def initLog(self):
@@ -504,6 +525,18 @@ class AcrcloudMonitor:
             sys.exit(1)
         else:
             self.dlog.logger.warn('Warn@AcrcloudMonitor.init_result.success')
+
+    def initState(self):
+        self.stateproc = multiprocessing.Process(target=self.stateworker,
+                                                 args=(self.stateQueue,
+                                                       self.shareDict,
+                                                       self.config))
+        self.stateproc.start()
+        if not self.stateproc.is_alive():
+            self.dlog.logger.error('Error@AcrcloudMonitor.init_state.failed')
+            sys.exit(1)
+        else:
+            self.dlog.logger.warn('Warn@AcrcloudMonitor.init_state.success')
 
     def initFresh(self):
         self.fresh_proc = Worker_AutoF(self.config, self.dlog)
@@ -544,6 +577,7 @@ class AcrcloudMonitor:
                 proc = multiprocessing.Process(target=self.dworker,
                                                args=(jsoninfo, mainqueue,
                                                      self.recQueue,
+                                                     self.stateQueue,
                                                      self.shareStatusDict,
                                                      self.shareDict,
                                                      self.config))
@@ -685,12 +719,12 @@ class AcrcloudMonitor:
         self.dlog.logger.warn('Warn@Acrcloud_Manager_Stop')
         sys.exit(1)
 
-def MonitorManager(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker):
-    mManager = AcrcloudMonitor(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker)
+def MonitorManager(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker, stateworker):
+    mManager = AcrcloudMonitor(mainQueue, config, shareMonitorDict, shareStatusDict, shareDict, dworker, rworker, sworker, stateworker)
     mManager.start()
 
-def RadioWorker(info, queue, recqueue, shareStatusDict, shareDict, config):
-    iWorker = AcrcloudWorker(info, queue, recqueue, shareStatusDict, shareDict, config)
+def RadioWorker(info, queue, recqueue, statequeue, shareStatusDict, shareDict, config):
+    iWorker = AcrcloudWorker(info, queue, recqueue, statequeue, shareStatusDict, shareDict, config)
     iWorker.start()
 
 def RecWorker(mainqueue, recqueue, resultqueue, shareDict, config):
@@ -701,8 +735,12 @@ def ResWorker(mainqueue, resultqueue, config):
     sWorker = Acrcloud_Result(mainqueue, resultqueue, config)
     sWorker.start()
 
+def StateWorker(stateQueue, shareDict, config):
+    sw = Acrcloud_State(stateQueue, shareDict, config)
+    sw.start()
+
 
 def core_obj():
-    return AcrcloudManager(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker))
+    return AcrcloudManager(AcrcloudSpringboard(MonitorManager, config, RadioWorker, RecWorker, ResWorker, StateWorker))
 
 
