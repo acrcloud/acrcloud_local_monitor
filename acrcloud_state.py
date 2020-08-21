@@ -61,9 +61,9 @@ class Acrcloud_State:
             headers = {'content-type': 'application/json'}
             post_data = {"status": post_list}
             if state_callback_url.startswith("https"):
-                response = requests.post(state_callback_url, data=json.dumps(post_data), verify=True, timeout=self.timeout)
+                response = requests.post(state_callback_url, data=json.dumps(post_data), headers=headers, verify=True, timeout=self.timeout)
             else:
-                response = requests.post(state_callback_url, data=json.dumps(post_data), timeout=self.timeout)
+                response = requests.post(state_callback_url, data=json.dumps(post_data), headers=headers, timeout=self.timeout)
 
             self.dlog.logger.warn("Warn@state_callback.post_success.streamID:{0}, res_code:{1}, res_text:{2}".format(",".join([item['stream_id'] + '|#|' + item['state'] for item in post_list]), response.status_code, response.text[:100]))
         except Exception as e:
