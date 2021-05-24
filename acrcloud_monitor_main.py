@@ -247,6 +247,8 @@ class Acrcloud_Monitor_Main(threading.Thread):
             self.state_callback_url = info_list.get("state_callback_url", "")
             self.state_callback_type = info_list.get("state_callback_type", 2) #1.Form, 2.Json
 
+            new_stream_ids = set()
+            old_stream_ids = set(self.monitor_dict.keys())
             #parse jsoninfo to self.shareMonitorDict
             for jsoninfo in info_list.get('streams', []):
                 jsoninfo['access_key'] = self.access_key
@@ -256,10 +258,12 @@ class Acrcloud_Monitor_Main(threading.Thread):
                 jsoninfo['state_callback_url'] = self.state_callback_url
                 jsoninfo['state_callback_type'] = self.state_callback_type
                 stream_id = jsoninfo['stream_id']
-                if self._do_add_monitor(jsoninfo, False):
-                    self.dlog.logger.warn("Add Stream Success:\n {0}".format(jsoninfo))
-                else:
-                    self.dlog.logger.error("Add Stream Failed:\n {0}".format(jsoninfo))
+                new_stream_ids.add(stream_id)
+                if stream_id not in self.monitor_dict:
+                    if self._do_add_monitor(jsoninfo, False):
+                        self.dlog.logger.warn("Add Stream Success:\n {0}".format(jsoninfo))
+                    else:
+                        self.dlog.logger.error("Add Stream Failed:\n {0}".format(jsoninfo))
         except Exception as e:
             self.dlog.logger.error('Error@init_streams', exc_info=True)
 

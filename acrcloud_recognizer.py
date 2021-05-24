@@ -98,7 +98,7 @@ class Acrcloud_Rec_Worker(threading.Thread):
                                                     stream_info['access_key'],
                                                     stream_info['access_secret'])
 
-            if res is None:
+            if res is None or res == '':
                 result['result'] = {"status": {"msg": "No result", "version": "1.0", "code": 1001}}
                 self.callback_fun(result)
                 self.dlog.logger.warn('Warn@Worker_Recognize({0}).Get_None_Rec_Result.({1})'.format(self.worker_num, stream_info['stream_id']))
