@@ -6,6 +6,7 @@ import sys
 import hmac
 import json
 import time
+import struct
 import base64
 import hashlib
 import urllib2
@@ -63,11 +64,11 @@ class acrcloud_recognize:
         return None, None
 
     def gen_fp(self, buf, rate=0):
-        return acrcloud_stream_decode.create_fingerprint(buf, False, 400, 0.3)
+        return acrcloud_stream_decode.create_fingerprint(buf, False, 300, 0.3)
 
-    def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=8):
+    def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=10):
         http_method = "POST"
-        http_url_file = "/v1/monitor/identify" #"/v1/identify"
+        http_url_file = "/v1/monitor/identify"
         data_type = query_type
         signature_version = "1"
         timestamp = int(time.mktime(datetime.datetime.utcfromtimestamp(time.time()).timetuple()))
@@ -88,12 +89,13 @@ class acrcloud_recognize:
         res = self.post_multipart(server_url, fields, {"sample" : query_data}, timeout)
         return res
 
-    def recognize(self, host, wav_buf, query_type, stream_id, access_key, access_secret, timeout=8, isCheck=False):
+    def recognize(self, host, wav_buf, query_type, stream_id, access_key, access_secret):
         try:
             res = ''
-            pcm_buf = self.gen_fp(wav_buf, self.rate)
-            res = self.do_recogize(host, pcm_buf, query_type, stream_id, access_key, access_secret, timeout)
+            fp_buf = ''
+            fp_buf = self.gen_fp(wav_buf, self.rate)
+            res = self.do_recogize(host, fp_buf, query_type, stream_id, access_key, access_secret)
         except Exception as e:
             self.dlog.logger.error('recognize error', exc_info=True)
-        return res
+        return res, ''
 

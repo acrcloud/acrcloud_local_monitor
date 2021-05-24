@@ -1,110 +1,168 @@
 #!/usr/bin/env python
-#-*- coding:utf-8 -*-
+# -*- coding: utf-8 -*-
+#
+# author: johny
+# date:2016/02/29
+# email: qiang@acrcloud.com
 
-import os
 import sys
-import json
 import time
+import json
+import copy
 import Queue
-import socket
 import random
-import signal
-import logging
-import datetime
+import urllib
+import urllib2
 import requests
+import datetime
+import logging
 import traceback
+import threading
 from dateutil.relativedelta import *
 
-from acrcloud_logger import AcrcloudLogger
+from acrcloud_logger import AcrcloudLogger as stateLogger
+
+import socket
+socket.setdefaulttimeout(30)
 
 reload(sys)
 sys.setdefaultencoding("utf8")
 
-socket.setdefaulttimeout(60)
+class StateWorker(threading.Thread):
 
-USER_AGENTS = [
-        'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
-        'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.0.12) Gecko/20070731 Ubuntu/dapper-security Firefox/1.5.0.12',
-        'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6',
-        'Mozilla/5.0 (Macintosh; U; Intel Mac OS X; en) AppleWebKit/419 (KHTML, like Gecko) Safari/419.3',
-        'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.83 Safari/537.1',
-        'Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1'
-]
-
-class Acrcloud_State:
-
-    def __init__(self, stateQueue, shareDict, config):
-        self.stateQueue = stateQueue
-        self.shareDict = shareDict
-        self.config = config
-        self.access_key = config['user']['access_key']
-        self.state_callback_key = "state_callback_url_" + self.access_key
-        self.timeout = 15
-        self.state_history = {} #用于保存历史的流状态
+    def __init__(self, config, state_queue, state_callback_url, state_callback_type):
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
+        self.state_queue = state_queue
+        self.state_config = config
+        self.state_callback_url = state_callback_url
+        self.state_callback_type = state_callback_type
+        self.state_log_dir = self.state_config['log']['dir']
+        self.state_log = 'state.log'
+        self.timeout = 12
         self.initLog()
-        self.dlog.logger.warning("Init State Worker success")
+        self.state_dict = {}
+        self.post_state_dict = {}
+        self.manager_qsize_dict = {}
+        self.dlog.logger.info('INFO@Init_StateWorker Success!')
 
     def initLog(self):
-        self.dlog = AcrcloudLogger("StateWorker.log", logging.INFO)
-        if not self.dlog.addFilehandler(logfile = "StateWorker.log", logdir = self.config['log']['dir']):
+        self.dlog = stateLogger("StateLog", logging.INFO)
+        if not self.dlog.addFilehandler(logfile = self.state_log, logdir = self.state_log_dir):
             sys.exit(1)
         if not self.dlog.addStreamHandler():
             sys.exit(1)
 
-    def do_post(self, post_list):
-        if self.state_callback_key in self.shareDict:
-            state_callback_url = self.shareDict[self.state_callback_key]
-        if not state_callback_url:
-            return
-
+    def check_if_post(self, stream_id):
         try:
-            headers = {'content-type': 'application/json'}
-            post_data = {"status": post_list}
-            if state_callback_url.startswith("https"):
-                response = requests.post(state_callback_url, data=json.dumps(post_data), headers=headers, verify=False, timeout=self.timeout)
-            else:
-                response = requests.post(state_callback_url, data=json.dumps(post_data), headers=headers, timeout=self.timeout)
-
-            self.dlog.logger.warn("Warn@state_callback.post_success.streamID:{0}, res_code:{1}, res_text:{2}".format(",".join([item['stream_id'] + '|#|' + item['state'] for item in post_list]), response.status_code, response.text[:100]))
+            if_post = True
+            if stream_id in self.post_state_dict:
+                history_post_state = self.post_state_dict[stream_id]
+                post_flag = False
+                for k in ["state", "type"]:
+                    if history_post_state[k] != self.state_dict[stream_id][k]:
+                        post_flag = True
+                        break
+                if post_flag == False and self.state_dict["timestamp"].split(" ")[0] != history_post_state["timestamp"].split(" ")[0]:
+                    post_flag = True
+                if_post = post_flag
+            self.post_state_dict[stream_id] = copy.deepcopy(self.state_dict[stream_id])
         except Exception as e:
-            self.dlog.logger.error('Errro@do_post:{0}'.format(post_list), exc_info=True)
+            self.dlog.logger.error("Error@check_if_post:{0}".format(stream_id))
+        return if_post
 
-    def deal_state(self, stateinfo):
+    def post_state(self, stream_id, msg, timestamp):
         try:
-            jinfo = json.loads(stateinfo)
-            stream_id =jinfo['stream_id']
-            code = jinfo['code']
-            state = jinfo['state']
-            timestamp = jinfo['timestamp']
-            if code == 1 and random.random() < 0.99:
+            if self.state_dict[stream_id]['state'] in ['running'] and self.state_dict[stream_id]['type'] == 'unknown':
                 return
-            if_post = False
-            if stream_id not in self.state_history:
-                self.state_history[stream_id] = jinfo
-                if_post = True
+
+            if self.state_dict[stream_id]['state'] == "timeout" and random.random() < 0.8:
+                return
+
+            if not self.check_if_post(stream_id):
+                return
+
+            headers = {'content-type': 'application/json'}
+
+            post_list = [self.state_dict[stream_id]]
+            post_data = {"status": post_list}
+            if self.state_callback_url.startswith("https"):
+                response = requests.post(self.state_callback_url, data=json.dumps(post_data), headers=headers, verify=False, timeout=self.timeout)
             else:
-                if self.state_history[stream_id]['code'] == code:
-                    self.state_history[stream_id]['timestamp'] = timestamp
-                else:
-                    self.state_history[stream_id] = jinfo
-                    if_post = True
-            if if_post:
-                self.do_post([jinfo])
+                response = requests.post(self.state_callback_url, data=json.dumps(post_data), headers=headers, timeout=self.timeout)
+
+            self.dlog.logger.warn("Warn@state_callback.post_success.streamID:{0}, res_code:{1}, res_text:{2}".format(",".join([item['stream_id']
+ + '|#|' + item['state'] for item in post_list]), response.status_code, response.text[:100]))
+
         except Exception as e:
-            self.dlog.logger.error('Error@deal_state:{0}'.format(stateinfo), exc_info=True)
+            self.dlog.logger.error('Error@post_state', exc_info=True)
 
-    def start(self):
-        self.Runing = True
+    def update_state(self, stateinfo):
+        try:
+            if len(stateinfo) == 2:
+                manager_id, qsize = stateinfo
+                self.manager_qsize_dict[manager_id] = qsize
+            else:
+                access_key, stream_id, index, msg, timestamp = stateinfo
+                if stream_id not in self.state_dict:
+                    self.state_dict[stream_id] = {'access_key' : access_key,
+                                                  'stream_id' : stream_id,
+                                                  'state' : 'start',
+                                                  'code' : 0,
+                                                  'type': 'unknown',
+                                                  'timestamp' : timestamp,
+                                                  'ffmpeg_code' : "",
+                                                  'ffmpeg_msg' : ""}
+                if index == -1:
+                    state_code, state_msg, type_code, type_msg = state_info = msg.split("#")
+                    self.state_dict[stream_id]['state'] = state_msg
+                    self.state_dict[stream_id]['code'] = int(state_code)
+                    self.state_dict[stream_id]['type'] = type_msg
+                elif index == 0:
+                    state_info = msg.split("#")
+                    if len(state_info) == 4:
+                        state_code, state_msg, ffmpeg_code, ffmpeg_msg = state_info
+                    else:
+                        state_code, state_msg = state_info
+                        ffmpeg_code, ffmpeg_msg = 0, ""
+                    self.state_dict[stream_id]['state'] = state_msg
+                    self.state_dict[stream_id]['code'] = int(state_code)
+                    self.state_dict[stream_id]['ffmpeg_code'] = str(ffmpeg_code)
+                    self.state_dict[stream_id]['ffmpeg_msg'] = ffmpeg_msg
+                elif index == 1:
+                    type_code, type_msg = msg.split('#')
+                    self.state_dict[stream_id]['type'] = type_msg
+                self.state_dict[stream_id]['timestamp'] = timestamp
+                self.post_state(stream_id, msg, timestamp)
+        except Exception as e:
+            self.dlog.logger.error('Error@update_state', exc_info=True)
+
+    def run(self):
         while 1:
-            if not self.Runing:
-                break
             try:
-                stateinfo = self.stateQueue.get()
-                self.deal_state(stateinfo)
+                stateinfo = self.state_queue.get()
             except Queue.Empty:
-                continue
-            time.sleep(0.02)
+                pass
+            self.update_state(stateinfo)
 
-    def stop(self):
-        self.Runing = False
+    def get_state(self, stream_id):
+        try:
+            if stream_id in self.state_dict:
+                return self.state_dict[stream_id]
+        except Exception as e:
+            self.dlog.logger.error('Error@get_state', exc_info=True)
+        return None
 
+    def set_pause_state(self, stateinfo):
+        try:
+            self.state_queue.put(stateinfo)
+        except Exception as e:
+            self.dlog.logger.error('Error@set_pause_state', exc_info=True)
+        return None
+
+    def get_manager_qsize(self):
+        try:
+            return self.manager_qsize_dict
+        except Exception as e:
+            self.dlog.logger.error('Error@get_manager_qsize', exc_info=True)
+        return None
