@@ -243,9 +243,13 @@ class Acrcloud_Monitor_Main(threading.Thread):
             #get callback info
             self.callback_url = info_list.get("callback_url", "")
             self.callback_type = info_list.get("callback_type", 2) #1.Form, 2.Json
+            if self.callback_type not in [1, 2, '1', '2']:
+                self.callback_type = 2
             #get state callback info
             self.state_callback_url = info_list.get("state_callback_url", "")
             self.state_callback_type = info_list.get("state_callback_type", 2) #1.Form, 2.Json
+            if self.state_callback_type not in [1, 2, '1', '2']:
+                self.state_callback_type = 2
 
             new_stream_ids = set()
             old_stream_ids = set(self.monitor_dict.keys())
