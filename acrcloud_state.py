@@ -73,6 +73,9 @@ class StateWorker(threading.Thread):
 
     def post_state(self, stream_id, msg, timestamp):
         try:
+            if not self.state_callback_url:
+                return
+
             if self.state_dict[stream_id]['state'] in ['running'] and self.state_dict[stream_id]['type'] == 'unknown':
                 return
 
