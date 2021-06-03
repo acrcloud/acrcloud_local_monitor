@@ -18,8 +18,8 @@ class MonitorClient:
 
     def state(self, id):
         state = self.mc.get('state:'+str(id))
-        jsonstate = json.loads(state)
-        print jsonstate
+        #jsonstate = json.loads(state)
+        print state
 
     def start(self):
         while 1:
