@@ -5,7 +5,10 @@
   
 ## Requirements                                                                                                                             
 Follow one of the tutorials to create a project and get your host, access_key and access_secret.
-
+ * Py    thon 2.7
+ * Works on Linux/Windows
+ * Follow one of the tutorials to create a project and get your host, access_key.
+ 
  * [Recognize Music](https://docs.acrcloud.com/tutorials/recognize-music)
  * [Recognize Custom Content](https://docs.acrcloud.com/tutorials/recognize-custom-content)
  * [Broadcast Monitoring for Music](https://docs.acrcloud.com/tutorials/broadcast-monitoring-for-music)
@@ -15,15 +18,6 @@ Follow one of the tutorials to create a project and get your host, access_key an
  * [Recognize Live Channels and Custom Content](https://docs.acrcloud.com/tutorials/recognize-tv-channels-and-custom-content)
   
 Local **Bradcast Monitoring** System is used to monitor live radio streams on your own local server. [Learn More](https://www.acrcloud.com/docs/acrcloud-services/for-pc-server/radio-airplay-monitoring-music/#server-location)
-
-## Requirements
-* Py    thon 2.7
-* Works on Linux/Windows
-* Follow one of the tutorials to create a project and get your host, access_key.
-
- * [Broadcast Monitoring for Music](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-music/)
- 
- * [Broadcast Monitoring for Custom Content](https://www.acrcloud.com/docs/tutorials/broadcast-monitoring-for-custom-content/)
 
 I
 ## How To Use
