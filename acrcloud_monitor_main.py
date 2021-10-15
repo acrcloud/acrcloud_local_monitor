@@ -433,12 +433,24 @@ class Acrcloud_Monitor_Main(threading.Thread):
         except Exception as e:
             self.dlog.logger.error("Error@Monitor_main.watch", exc_info=True)
 
+    def auto_refresh(self):
+        try:
+            now_tobj = datetime.datetime.utcnow()
+            diff_seconds = (now_tobj - self.refresh_tobj).total_seconds()
+            if diff_seconds > self.refresh_interval:
+                self.refresh_tobj = now_tobj
+                self.refresh()
+        except Exception as e:
+            self.dlog.logger.error("Error@auto_refresh", exc_info=True)
+
     def run(self):
         self.running = True
         while self.running:
             try:
                 itype, info = self.main_queue.get(timeout=10)
                 self.deal_task(itype, info)
+                if random.random() < 0.5:
+                    self.auto_refresh()
             except Queue.Empty:
                 pass
             self.watch_smanager()
