@@ -11,6 +11,7 @@ config = {
     #if you only want to monitor some streams of your local project, you can fill ids in the field of stream_ids:
     #like: stream_ids:["stream_id1", "stream_id2"], if empty, it will monitor all the streams.
     "stream_ids":[],
+    "recognize": {},
     "database":{
         #Local Database Config
         "enabled": 1, #1-enabled(default), 0-disabled

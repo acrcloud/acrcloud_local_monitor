@@ -60,6 +60,20 @@ class Acrcloud_Rec_Worker(threading.Thread):
         except Exception as e:
             self.dlog.logger.error('Error@callback_fun', exc_info=True)
 
+    def do_spl_rec(self, rec_host, audio_buf, stream_id, access_key, access_secret, encode):
+        try:
+            need_update, json_new_res, new_res = False, None, None
+            #用音频进行识别
+            new_res = self.recognizer.recognize_new(rec_host, audio_buf, 'audio', stream_id, access_key, access_secret, encode)
+            if new_res:
+                json_new_res = json.loads(new_res)
+                if 'status' in json_new_res and json_new_res['status']['code'] == 0:
+                    need_update = True
+                    self.dlog.logger.warning("do_spl_rec.get_result:{0}, res: Yes".format(stream_id))
+        except Exception as e:
+            self.dlog.logger.error('Error@do_spl_rec:{0}, {1}'.format(stream_id, access_key), exc_info=True)
+        return need_update, json_new_res
+
     def do_rec(self, datainfo):
         try:
             stream_info, buffer, timestamp, pitch_shift_flag, stream_metadata = datainfo[:5]
@@ -73,6 +87,7 @@ class Acrcloud_Rec_Worker(threading.Thread):
                 pem_file_encoded = base64.b64encode(buffer)
 
             stream_rec_type = stream_info.get("stream_rec_type", 0)
+            encode = stream_info.get("encode", 0)
 
             result = {
                 "stream_id": stream_info['stream_id'],
@@ -109,6 +124,21 @@ class Acrcloud_Rec_Worker(threading.Thread):
             except Exception as e:
                 self.dlog.logger.error('Error@Worker_Recognize({0}).parse_rec_json.({1}), error rec:{2}'.format(self.worker_num, stream_info['stream_id'], res))
                 return
+
+            try:
+                if 'status' in json_res and json_res['status'].get('code') == 1001:
+                    if stream_rec_type == 1:
+                        need_update, new_json_res = self.do_spl_rec(stream_info['rec_host'],
+                                                                    buffer,
+                                                                    stream_info['stream_id'],
+                                                                    stream_info['access_key'],
+                                                                    stream_info['access_secret'],
+                                                                    encode)
+                        if need_update:
+                            json_res = new_json_res
+            except Exception as e:
+                self.dlog.logger.error("Error@do_rec.do_spl_rec:{0}, {1}, {2}".format(stream_id, access_key, api_type, raw_access_key), exc_info=True)
+
 
             if 'response' in json_res and json_res['response']['status']['code'] == 0:
                 result['result'] = json_res

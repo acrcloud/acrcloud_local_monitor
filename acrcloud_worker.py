@@ -29,7 +29,8 @@ from random import choice
 
 from tools_url import Tools_Url
 from acrcloud_recognizer import Acrcloud_Rec_Worker
-import acrcloud_stream_decode as acrcloud_download
+#import acrcloud_stream_decode as acrcloud_download
+import acrcloud_stream_tool as acrcloud_download
 from acrcloud_logger import AcrcloudLogger
 
 reload(sys)
@@ -50,6 +51,13 @@ class Worker_DownloadStream(threading.Thread):
         self._callback_url = callback_url
         self._config = config
         self._log_dir = self._config['log']['dir']
+        self._stream_rec_type = 0
+        self._encode = 0
+        if 'recognize' in self._config and 'stream_rec_type' in self._config['recognize'] and self._config['recognize']['stream_rec_type'] in [0, 1]:
+            self._stream_rec_type = self._config['recognize']['stream_rec_type']
+            if 'encode' in self._config['recognize'] and self._config['recognize']['encode'] in [0, 1]:
+                self._encode = self._config['recognize']['encode']
+
         self.tools_url = Tools_Url()
         self.initLog()
 
@@ -113,7 +121,8 @@ class Worker_DownloadStream(threading.Thread):
             'access_secret': str(info.get('access_secret', '')),
             'stream_id':str(info.get('stream_id')),
             'stream_url':str(info.get('stream_url', '')),
-            'stream_rec_type': info.get('stream_rec_type', 0),
+            'stream_rec_type': self._stream_rec_type, #info.get('stream_rec_type', 0),
+            'encode': self._encode,
             'stream_spare_urls': self._url_map["url_list"],
             'stream_url_now': self._stream_url_now,
             'monitor_interval': int(info.get('interval', 5)),

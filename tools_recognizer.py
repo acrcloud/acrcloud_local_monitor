@@ -13,7 +13,7 @@ import urllib2
 import datetime
 import mimetools
 import traceback
-import acrcloud_stream_decode
+import acrcloud_stream_tool as acrcloud_stream_decode
 
 class acrcloud_recognize:
 
@@ -63,6 +63,51 @@ class acrcloud_recognize:
             self.dlog.logger.error('encode_multipart_formdata error', exc_info=True)
         return None, None
 
+    def add_wav_header(self, buf, audio_sample_rate):
+        try:
+            buf_size = len(buf)
+            flag_riff = 'RIFF'
+            file_size = buf_size + 44 - 8
+            flag_wave = 'WAVE'
+            flag_fmt = 'fmt '
+            version = 0x10
+            iformat = 1
+            channel = 1
+            SamplePerSec = audio_sample_rate #8000
+            AvgBytesPerSec = audio_sample_rate*2 #16000
+            blockalign = 2
+            BitPerSample = 16
+            flag_data = 'data'
+            pcm_size = buf_size
+            wav_header = struct.pack('4si4s4sihhiihh4si', flag_riff, file_size, flag_wave, flag_fmt, version, iformat,
+                                     channel, SamplePerSec, AvgBytesPerSec, blockalign, BitPerSample, flag_data, pcm_size)
+            wav_buf = wav_header + buf
+            return wav_buf
+        except Exception as e:
+            self.dlog.logger.error('Error@add_wav_header', exc_info=True)
+        return buf
+
+    def pcm_to_aac(self, pcm_buf, pcm_sample_rate=8000, atype='aac', is_strip=False):
+        try:
+            opt = {
+                'sample_rate': pcm_sample_rate,
+                'channels': 1,
+                'bit_rate': 16*1024,
+                'type': atype
+            }
+            if is_strip:
+                opt['is_strip'] = 1
+            if acrcloud_stream_decode:
+                encoder = acrcloud_stream_decode.Encoder(opt)
+                encoder.write(pcm_buf)
+                abuf = encoder.read_all()
+                return abuf
+            else:
+                return pcm_buf
+        except Exception as e:
+            self.dlog.logger.error("Error@pcm_to_aac", exc_info=True)
+        return ''
+
     def gen_fp(self, buf, rate=0):
         return acrcloud_stream_decode.create_fingerprint(buf, False, 300, 0.3)
 
@@ -98,4 +143,20 @@ class acrcloud_recognize:
         except Exception as e:
             self.dlog.logger.error('recognize error', exc_info=True)
         return res, ''
+
+    def recognize_new(self, host, wav_buf, query_type, stream_id, access_key, access_secret, encode=False):
+        try:
+            res, in_buf = '', ''
+            if query_type == 'audio':
+                if not encode:
+                    in_buf = self.add_wav_header(wav_buf, 8000)
+                else:
+                    in_buf = self.pcm_to_aac(wav_buf, 8000, 'aac', True)
+            elif query_type == 'fingerprint':
+                in_buf = self.gen_fp(wav_buf, self.rate)
+            if in_buf:
+                res = self.do_recogize(host, in_buf, query_type, stream_id, access_key, access_secret)
+        except Exception as e:
+            self.dlog.logger.error('recognize_by_fp error.stream_id:{0}'.format(stream_id), exc_info=True)
+        return res
 
