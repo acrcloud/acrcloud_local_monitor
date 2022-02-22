@@ -1,10 +1,10 @@
 # Broadcast Monitoring - ACRCloud Local Service
 
 ## Overview
-  [ACRCloud](https://www.acrcloud.com/) provides services such as **[Music Recognition](https://www.acrcloud.com/music-recognition)**, **[Broadcast Monitoring](https://www.acrcloud.com/broadcast-monitoring/)**, **[Custom Audio Recognition](https://www.acrcloud.com/second-screen-synchronization%e2%80%8b/)**, **[Copyright Compliance & Data Deduplication](https://www.acrcloud.com/copyright-compliance-data-deduplication/)**, **[Live Channel Detection](https://www.acrcloud.com/live-channel-detection/)**, and **[Offline Recognition](https://www.acrcloud.com/offline-recognition/)** etc.<br>
+a  [ACRCloud](https://www.acrcloud.com/) provides services such as **[Music Recognition](https://www.acrcloud.com/music-recognition)**, **[Broadcast Monitoring](https://www.acrcloud.com/broadcast-monitoring/)**, **[Custom Audio Recognition](https://www.acrcloud.com/second-screen-synchronization%e2%80%8b/)**, **[Copyright Compliance & Data Deduplication](https://www.acrcloud.com/copyright-compliance-data-deduplication/)**, **[Live Channel Detection](https://www.acrcloud.com/live-channel-detection/)**, and **[Offline Recognition](https://www.acrcloud.com/offline-recognition/)** etc.<br>
   
 ## Requirements                                                                                                                             
-Follow one of the tutorials to create a project and get your host, access_key and access_secret.
+Faollow one of the tutorials to create a project and get your host, access_key and access_secret.
  * Py    thon 2.7
  * Works on Linux/Windows
  * Follow one of the tutorials to create a project and get your host, access_key.
@@ -35,7 +35,7 @@ I
    These config can be set in "acrcloud_config.py".<br>
 
 ## Python Dependency Library
-1. [Twisted](https://github.com/twisted/twisted)
+1.a [Twisted](https://github.com/twisted/twisted)
 2. [requests](https://pypi.org/project/requests/)
 3. [fuzzywuzzy](https://github.com/seatgeek/fuzzywuzzy)
 4. [beautifulsoup4](https://pypi.python.org/pypi/beautifulsoup4)
@@ -43,11 +43,11 @@ I
 
 
 ## Install on Windows
-
+a
 1. Install Windows Runtime Library
     
-    * X86: [download and install Library(vcredist_x86.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=5555)
-    * x64: [download and install Library(vcredist_x64.exe)](https://www.microsoft.com/en-us/download/details.aspx?id=14632)
+    * X86: [download and install Library(vcredist_x86.exe)](https://github.com/acrcloud/acrcloud_sdk_python/blob/master/windows/vcredist_x86.exe)
+    * x64: [download and install Library(vcredist_x64.exe)](https://github.com/acrcloud/acrcloud_sdk_python/blob/master/windows/vcredist_x64.exe)
 
 2. Install [Mysql](https://dev.mysql.com/downloads/installer/) on your windows
 3. Create Databases(in acrcloud_local_monitor direction and run this command)
@@ -84,7 +84,7 @@ I
 
 
 ## Run as a Docker Container
-
+a
 1. Install Docker
 
     * If you are using Windows: Download [Docker Desktop for Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe) and install.
