@@ -8,10 +8,10 @@ import copy
 import time
 import Queue
 import random
-import MySQLdb
 import datetime
 import threading
 import traceback
+import importlib
 import tools_str_sim
 import tools_language
 import multiprocessing
@@ -115,7 +115,8 @@ class Acrcloud_Result:
 class Backup:
 
     def __init__(self, config, recordQueue, callbackQueue, dlog):
-        self._sql = "insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, CURRENT_DATE()) on duplicate key update id=LAST_INSERT_ID(id)"
+        self._sql_mysql = "insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s) on duplicate key update id=LAST_INSERT_ID(id)"
+        self._sql_psql = "insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s)"
         self._config = config
         db_config = self._config["database"]
         self._recordQueue = recordQueue
@@ -124,11 +125,24 @@ class Backup:
         self.dlog = dlog
         self._mdb = None
         if db_config.get("enabled", 1) and db_config.get("host"):
-            self._mdb = MysqlManager(host=db_config["host"],
+            if db_config.get('type') == 'mysql':
+                acrdb = importlib.import_module('acrcloud_mysql')
+                MysqlManager = acrdb.MysqlManager
+                self._mdb = MysqlManager(host=db_config["host"],
                                      port=db_config["port"],
                                      user=db_config["user"],
                                      passwd=db_config["passwd"],
                                      dbname=db_config["db"])
+                self._sql = self._sql_mysql
+            else:
+                acrdb = importlib.import_module('acrcloud_psql')
+                PsqlManager = acrdb.PsqlManager
+                self._mdb = PsqlManager(host=db_config["host"],
+                                     port=db_config["port"],
+                                     user=db_config["user"],
+                                     passwd=db_config["passwd"],
+                                     dbname=db_config["db"])
+                self._sql = self._sql_psql
         self._log_dir = self._config["log"]["dir"]
         self._result_filter = ResultFilter(self.dlog, self._log_dir)
         self._tools_lan = tools_language.tools_language()
@@ -217,16 +231,18 @@ class Backup:
                     self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
 
                 if self._mdb:
+                    now_date = datetime.datetime.utcnow().strftime('%Y-%m-%d')
                     params = (access_key,
                               stream_url,
                               stream_id,
                               json.dumps(result),
-                              data.get('timestamp'),)
+                              data.get('timestamp'),
+                              now_date)
                     try:
                         self._mdb.execute(self._sql, params)
                         self._mdb.commit()
                         return True
-                    except MySQLdb.Error as e:
+                    except Exception as e:
                         self.dlog.logger.error("Error@save_one_uniq.db_execute", exc_info=True)
         return False
 
@@ -282,7 +298,7 @@ class Backup:
                 self._mdb.execute(self._sql, params)
                 self._mdb.commit()
                 return True
-            except MySQLdb.Error as e:
+            except Exception as e:
                 self.dlog.logger.error("Error@save_one_delay.db_execute", exc_info=True)
         return False
 
@@ -354,64 +370,3 @@ class Backup:
             self.dlog.logger.error("Error_Data:{0}, {1}".format(jsondata.get('stream_id'), jsondata.get('result')))
         return ret
 
-
-class MysqlManager:
-    def __init__(self, host, port, user, passwd, dbname):
-        self.host = host
-        self.port = port
-        self.user = user
-        self.passwd = passwd
-        self.dbname = dbname
-        self.conn = MySQLdb.connect(host=host, user=user,
-                                    passwd=passwd, db=dbname,
-                                    port=port, charset="utf8")
-        #self.conn = MySQLdb.connect(host, port, user, passwd, dbname, charset="utf8")
-        self.curs = self.conn.cursor()
-
-    def reconnect(self):
-        self.conn = MySQLdb.connect(host=self.host, port=self.port, user=self.user,
-                passwd=self.passwd, db=self.dbname, charset="utf8")
-        self.curs = self.conn.cursor()
-
-    def commit(self):
-        try:
-            self.conn.commit();
-        except (AttributeError, MySQLdb.Error):
-            self.reconnect()
-            try:
-                self.conn.commit();
-            except MySQLdb.Error:
-                raise
-
-    def execute(self, sql, params=None):
-        if params:
-            try:
-                self.curs.execute(sql, params)
-            except (AttributeError, MySQLdb.Error):
-                self.reconnect()
-                try:
-                    self.curs.execute(sql, params)
-                except MySQLdb.Error:
-                    raise
-        else:
-            try:
-                self.curs.execute(sql)
-            except (AttributeError, MySQLdb.Error):
-                self.reconnect()
-                try:
-                    self.curs.execute(sql)
-                except MySQLdb.Error:
-                    raise
-        return self.curs
-
-    def executemany(self, sql, params):
-        if params:
-            try:
-                self.curs.executemany(sql, params)
-            except (AttributeError, MySQLdb.Error):
-                self.reconnect()
-                try:
-                    self.curs.executemany(sql, params)
-                except MySQLdb.Error:
-                    raise
-        return self.curs

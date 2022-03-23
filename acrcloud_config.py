@@ -13,10 +13,11 @@ config = {
     "stream_ids":[],
     "recognize": {},
     "database":{
+        'type': 'mysql', # mysql or psql
         #Local Database Config
         "enabled": 1, #1-enabled(default), 0-disabled
         "host":"127.0.0.1",
-        "port":3306,
+        "port":3306, # psql port: 5432
         "user":"root",
         "passwd":"XXXXXXXXX",
         "db":"monitor_result",
