@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 #-*- coding:utf-8 -*-
 
+import sys
 import MySQLdb
+import traceback
 
 reload(sys)
 sys.setdefaultencoding("utf8")

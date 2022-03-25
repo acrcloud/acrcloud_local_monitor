@@ -2,6 +2,7 @@
 #-*- coding:utf -*-
 
 import os
+import sys
 import traceback
 import psycopg2
 from psycopg2 import sql
