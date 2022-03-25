@@ -289,11 +289,13 @@ class Backup:
             except Exception as e:
                 self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
 
+            now_date = datetime.datetime.utcnow().strftime('%Y-%m-%d')
             params = (access_key,
                       stream_url,
                       stream_id,
                       json.dumps(result),
-                      data.get('timestamp'),)
+                      data.get('timestamp'),
+                      now_date)
             try:
                 self._mdb.execute(self._sql, params)
                 self._mdb.commit()
