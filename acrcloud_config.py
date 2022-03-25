@@ -13,7 +13,7 @@ config = {
     "stream_ids":[],
     "recognize": {},
     "database":{
-        'type': 'mysql', # mysql or psql
+        'type': 'mysql', # mysql or psql, if psql is selected, make sure to install the python package 'psycopg2'
         #Local Database Config
         "enabled": 1, #1-enabled(default), 0-disabled
         "host":"127.0.0.1",
