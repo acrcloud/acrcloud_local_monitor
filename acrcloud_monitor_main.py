@@ -140,7 +140,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
         self.state_callback_type = 2
 
         self.refresh_tobj = datetime.datetime.utcnow()
-        self.refresh_interval = 24*60
+        self.refresh_interval = 2*60*60
 
         self.init_configuration()
         self.init_log()
@@ -449,10 +449,10 @@ class Acrcloud_Monitor_Main(threading.Thread):
             try:
                 itype, info = self.main_queue.get(timeout=10)
                 self.deal_task(itype, info)
-                if random.random() < 0.5:
-                    self.auto_refresh()
             except Queue.Empty:
                 pass
+            if random.random() < 0.5:
+                self.auto_refresh()
             self.watch_smanager()
 
 def ResWorker(mainqueue, resultqueue, config):

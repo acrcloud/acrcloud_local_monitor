@@ -444,7 +444,6 @@ class ResultFilter(object):
 
             total_audio_duration = sum([ history_data[i][0][0]['audio_duration'] for i in range(tmp_start_index, tmp_end_index)])
             played_duration2 = abs(int(math.ceil(total_audio_duration - math.floor(start_result_brief['sample_begin']) + math.ceil(end_result_brief['sample_end']))))
-
             return { 'played_duration' : played_duration2, 'timestamp_utc': start_timestamp_utc, 'time_diff': played_duration1 }
         except Exception as e:
             self.dlog.logger.error('Error@delay_compute_played_duration', exc_info=True)
@@ -642,6 +641,7 @@ class ResultFilter(object):
 
         if ret_data and duration_info:
             played_duration = abs(duration_info['played_duration'])
+            played_duration = played_duration + 1 if 6 < played_duration < 120 else played_duration
             timestamp_utc = duration_info['timestamp_utc']
             ret_data['result']['metadata']['played_duration'] = played_duration
             ret_data['result']['metadata']['timestamp_utc'] = timestamp_utc
