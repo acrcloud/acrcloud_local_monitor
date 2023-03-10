@@ -272,7 +272,7 @@ class Backup:
         result = data.get('result', {})
         if result and filter_chinese:
             result = self.filter_chinese(stream_id, result)
-        if self._mdb and result:
+        if result:
             data['result'] = result
             try:
                 if (isCustom==0 and old_data.get('record', [0,0,0])[0] in [2,3]) or (isCustom==1 and old_data.get('record', [0,0,0])[0] in [1,3]):
@@ -289,19 +289,22 @@ class Backup:
             except Exception as e:
                 self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
 
-            now_date = datetime.datetime.utcnow().strftime('%Y-%m-%d')
-            params = (access_key,
-                      stream_url,
-                      stream_id,
-                      json.dumps(result),
-                      data.get('timestamp'),
-                      now_date)
-            try:
-                self._mdb.execute(self._sql, params)
-                self._mdb.commit()
-                return True
-            except Exception as e:
-                self.dlog.logger.error("Error@save_one_delay.db_execute", exc_info=True)
+            if self._mdb:
+                now_date = datetime.datetime.utcnow().strftime('%Y-%m-%d')
+                params = (
+                        access_key,
+                        stream_url,
+                        stream_id,
+                        json.dumps(result),
+                        data.get('timestamp'),
+                        now_date
+                    )
+                try:
+                    self._mdb.execute(self._sql, params)
+                    self._mdb.commit()
+                    return True
+                except Exception as e:
+                    self.dlog.logger.error("Error@save_one_delay.db_execute", exc_info=True)
         return False
 
     def utc2local(self, utc_str):
