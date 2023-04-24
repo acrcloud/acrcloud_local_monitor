@@ -1,3 +1,3 @@
 #!/bin/bash
 
-python acrcloud_local_server.py
+python2 acrcloud_local_server.py
