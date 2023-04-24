@@ -18,8 +18,7 @@ RUN pip --version
 
 RUN pip install typing
 RUN pip install Twisted==20.3.0 requests fuzzywuzzy beautifulsoup4 python-dateutil psutil
-RUN pip install pymysql #mysql-connector mysql-connector-python
-
+RUN pip install mysqlclient
 
 WORKDIR /docker_local_monitor
 COPY . .
