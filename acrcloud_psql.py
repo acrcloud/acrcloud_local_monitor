@@ -67,3 +67,10 @@ class PsqlManager:
                     raise
         return self.curs
 
+    def insert_results(self, params):
+        try:
+            sql = '''insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s)'''
+            self.curs.execute(sql, params)
+            self.conn.commit()
+        except Exception as e:
+            traceback.print_exc()

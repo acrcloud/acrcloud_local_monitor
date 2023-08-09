@@ -1,16 +1,3 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
-
-"""
-author: quqiang
-date: 2015/07/31
-  
-ps: code from web
-汉字处理的工具:
-判断unicode是否是汉字，数字，英文，或者其他字符
-全角符号转半角符号
-"""
-
 class tools_language:
     def __init__(self):
         pass
@@ -104,4 +91,4 @@ if __name__ == "__main__":
     hello = tools_language()
     ustring = [u'中文lk', 'so what']
     for item in ustring:
-        print hello.filter_has_chinese(item)
+        print (hello.has_chinese(item))

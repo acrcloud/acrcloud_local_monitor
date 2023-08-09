@@ -1,12 +1,9 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
-
 import sys
 import math
 import json
 import copy
 import time
-import Queue
+import queue
 import random
 import datetime
 import threading
@@ -20,19 +17,16 @@ from acrcloud_record import recordWorker
 from acrcloud_callback import postManager
 from tools_data_filter_local import ResultFilter
 
-reload(sys)
-sys.setdefaultencoding("utf8")
-
-sys.path.append("../")
+sys.path.append('../')
 import acrcloud_logger
 
-NORESULT = "noResult"
+NORESULT = 'noResult'
 
 class Acrcloud_Result:
-    def __init__(self, mainqueue, resultQueue, config):
+    def __init__(self, mainQueue, resultQueue, config):
         self._config = config
         self._log_dir = self._config['log']['dir']
-        self._mainQueue = mainqueue
+        self._mainQueue = mainQueue
         self._resultQueue = resultQueue
         self._callbackQueue = multiprocessing.Queue()
         self._recordQueue = multiprocessing.Queue()
@@ -40,7 +34,7 @@ class Acrcloud_Result:
         self.data_backup = Backup(self._config, self._recordQueue, self._callbackQueue, self.dlog)
         self.init_record()
         self.init_callback_manager()
-        self.dlog.logger.warn("Warn@Acrcloud_Result Init Success!")
+        self.dlog.logger.warning('Warn@Acrcloud_Result Init Success!')
 
     def init_logger(self):
         self.dlog = acrcloud_logger.AcrcloudLogger('LocalResult')
@@ -54,10 +48,10 @@ class Acrcloud_Result:
             self.record_proc.daemon = True
             self.record_proc.start()
             if not self.record_proc.is_alive():
-                self.dlog.logger.error("Error@Acrcloud_Result.record worker run failed, exit")
+                self.dlog.logger.error('Error@Acrcloud_Result.record worker run failed, exit')
                 sys.exit(1)
             else:
-                self.dlog.logger.warn("Warn@Acrcloud_Result.init_record success")
+                self.dlog.logger.warning('Warn@Acrcloud_Result.init_record success')
         except Exception as e:
             self.dlog.logger.error('Error@Acrcloud_Result.init_record', exc_info=True)
 
@@ -67,12 +61,12 @@ class Acrcloud_Result:
             self.callback_manager_proc.daemon = True
             self.callback_manager_proc.start()
             if not self.callback_manager_proc.is_alive():
-                self.dlog.logger.error("Error@Acrcloud_Result.init_callback_manager run failed, exit")
+                self.dlog.logger.error('Error@Acrcloud_Result.init_callback_manager run failed, exit')
                 sys.exit(1)
             else:
-                self.dlog.logger.warn("Warn@Acrcloud_Result.init_callback_manager success")
+                self.dlog.logger.warning('Warn@Acrcloud_Result.init_callback_manager success')
         except Exception as e:
-            self.dlog.logger.error("Error@Acrcloud_Result.init_callback_manager", exc_info=True)
+            self.dlog.logger.error('Error@Acrcloud_Result.init_callback_manager', exc_info=True)
 
 
     def deal_result(self, resinfo):
@@ -90,12 +84,12 @@ class Acrcloud_Result:
                 maininfo = self._mainQueue.get(block = False)
                 if maininfo and maininfo[0] == 'stop':
                     self.stop()
-            except Queue.Empty:
+            except queue.Empty:
                 time.sleep(0.01)
 
             try:
                 resinfo = self._resultQueue.get(block = False)
-            except Queue.Empty:
+            except queue.Empty:
                 if random.random() < 0.1:
                     time.sleep(0.02)
                 continue
@@ -103,11 +97,11 @@ class Acrcloud_Result:
             self.deal_result(resinfo)
 
             if random.random() < 0.1:
-                self.dlog.logger.warn("Warn@resultQueue.qsize.{0}".format(self._resultQueue.qsize()))
+                self.dlog.logger.warning('Warn@resultQueue.qsize.{0}'.format(self._resultQueue.qsize()))
 
     def stop(self):
         self._running = False
-        self.dlog.logger.warn('Warn@Acrcloud_Result_Stop')
+        self.dlog.logger.warning('Warn@Acrcloud_Result_Stop')
         sys.exit(1)
 
 
@@ -115,68 +109,68 @@ class Acrcloud_Result:
 class Backup:
 
     def __init__(self, config, recordQueue, callbackQueue, dlog):
-        self._sql_mysql = "insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s) on duplicate key update id=LAST_INSERT_ID(id)"
-        self._sql_psql = "insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s)"
         self._config = config
-        db_config = self._config["database"]
+        db_config = self._config['database']
         self._recordQueue = recordQueue
         self._callbackQueue = callbackQueue
         self._redis_map = {}
         self.dlog = dlog
         self._mdb = None
-        if db_config.get("enabled", 1) and db_config.get("host"):
+        if db_config.get('enabled', 1) and db_config.get('host'):
             if db_config.get('type') == 'mysql':
                 acrdb = importlib.import_module('acrcloud_mysql')
                 MysqlManager = acrdb.MysqlManager
-                self._mdb = MysqlManager(host=db_config["host"],
-                                     port=db_config["port"],
-                                     user=db_config["user"],
-                                     passwd=db_config["passwd"],
-                                     dbname=db_config["db"])
-                self._sql = self._sql_mysql
+                self._mdb = MysqlManager(host=db_config['host'],
+                                     port=db_config['port'],
+                                     user=db_config['user'],
+                                     passwd=db_config['passwd'],
+                                     dbname=db_config['db'])
+            elif db_config.get('type') == 'sqlite3':
+                acrdb = importlib.import_module('acrcloud_sqlite3')
+                Sqlite3Manager = acrdb.Sqlite3Manager
+                self._mdb = Sqlite3Manager(db_config.get('sqlite3_db_fpath', './sqlite3_db/results.db'))
             else:
                 acrdb = importlib.import_module('acrcloud_psql')
                 PsqlManager = acrdb.PsqlManager
-                self._mdb = PsqlManager(host=db_config["host"],
-                                     port=db_config["port"],
-                                     user=db_config["user"],
-                                     passwd=db_config["passwd"],
-                                     dbname=db_config["db"])
-                self._sql = self._sql_psql
-        self._log_dir = self._config["log"]["dir"]
+                self._mdb = PsqlManager(host=db_config['host'],
+                                     port=db_config['port'],
+                                     user=db_config['user'],
+                                     passwd=db_config['passwd'],
+                                     dbname=db_config['db'])
+        self._log_dir = self._config['log']['dir']
         self._result_filter = ResultFilter(self.dlog, self._log_dir)
         self._tools_lan = tools_language.tools_language()
 
     def filter_chinese(self, stream_id, result):
         try:
             if not result:
-                return ""
-            if "metainfos" in result:
+                return ''
+            if 'metainfos' in result:
                 return result
-            if "metadata" in result and "custom_files" in result["metadata"]:
+            if 'metadata' in result and 'custom_files' in result['metadata']:
                 return result
 
-            music = result["metadata"]["music"][0]
-            if self._tools_lan.has_chinese(music["title"]):
-                self.dlog.logger.warn("Lan@StreamID: {0}, Title Has Chinese: {1}".format(stream_id,music["title"]))
-                return ""
-            if self._tools_lan.has_chinese(music["artists"][0]["name"]):
-                self.dlog.logger.warn("Lan@StreamID: {0}, Artists Has Chinese: {1}".format(stream_id,music["artists"][0]["name"]))
-                return ""
-            if music.get("label") and self._tools_lan.has_chinese(music["label"]):
-                result["metadata"]["music"][0]["label"] = ""
-            if self._tools_lan.has_chinese(music["album"]["name"]):
-                result["metadata"]["music"][0]["album"]["name"] = ""
+            music = result['metadata']['music'][0]
+            if self._tools_lan.has_chinese(music['title']):
+                self.dlog.logger.warning('Lan@StreamID: {0}, Title Has Chinese: {1}'.format(stream_id,music['title']))
+                return ''
+            if self._tools_lan.has_chinese(music['artists'][0]['name']):
+                self.dlog.logger.warning('Lan@StreamID: {0}, Artists Has Chinese: {1}'.format(stream_id,music['artists'][0]['name']))
+                return ''
+            if music.get('label') and self._tools_lan.has_chinese(music['label']):
+                result['metadata']['music'][0]['label'] = ''
+            if self._tools_lan.has_chinese(music['album']['name']):
+                result['metadata']['music'][0]['album']['name'] = ''
             return result
         except Exception as e:
-            self.dlog.logger.error("Error@filter_chinese, error data:{0}".format(json.dumps(result)), exc_info=True)
+            self.dlog.logger.error('Error@filter_chinese, error data:{0}'.format(json.dumps(result)), exc_info=True)
         return result
 
     def format_timestamp(self, timestr):
-        return datetime.datetime.strptime(timestr, "%Y-%m-%d %H:%M:%S").strftime('%Y%m%d%H%M%S')
+        return datetime.datetime.strptime(timestr, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M%S')
 
     def save_one_uniq(self, old_data, isCustom=0):
-        filter_chinese = old_data.get("filter_chinese", 0)
+        filter_chinese = old_data.get('filter_chinese', 0)
         if 'response' in old_data['result']:
             old_data['result'] = old_data['result']['response']
 
@@ -200,9 +194,9 @@ class Backup:
             title = self._result_filter.get_mutil_result_title(data, 'music', 1)[0]
 
         if isCustom:
-            redis_name = "monitor_custom_{0}_{1}".format(access_key, stream_id)
+            redis_name = 'monitor_custom_{0}_{1}'.format(access_key, stream_id)
         else:
-            redis_name = "monitor_{0}_{1}".format(access_key, stream_id)
+            redis_name = 'monitor_{0}_{1}'.format(access_key, stream_id)
         if redis_name not in self._redis_map:
             self._redis_map[redis_name] = {'title':'', 'info': ''}
 
@@ -228,7 +222,7 @@ class Backup:
                     postdata = copy.deepcopy(data)
                     self._callbackQueue.put(json.dumps(postdata))
                 except Exception as e:
-                    self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
+                    self.dlog.logger.error('Error@save_one_uniq.send_to_callback', exc_info=True)
 
                 if self._mdb:
                     now_date = datetime.datetime.utcnow().strftime('%Y-%m-%d')
@@ -239,11 +233,10 @@ class Backup:
                               data.get('timestamp'),
                               now_date)
                     try:
-                        self._mdb.execute(self._sql, params)
-                        self._mdb.commit()
+                        self._mdb.insert_results(params)
                         return True
                     except Exception as e:
-                        self.dlog.logger.error("Error@save_one_uniq.db_execute", exc_info=True)
+                        self.dlog.logger.error('Error@save_one_uniq.db_execute', exc_info=True)
         return False
 
     def save_one_delay(self, old_data, isCustom=0):
@@ -278,16 +271,16 @@ class Backup:
                 if (isCustom==0 and old_data.get('record', [0,0,0])[0] in [2,3]) or (isCustom==1 and old_data.get('record', [0,0,0])[0] in [1,3]):
                     self._recordQueue.put(('save', data))
                     result['metadata']['record_timestamp'] = self.format_timestamp(data['timestamp'])
-                    self.dlog.logger.info("Send To Record (streamID:{0}, isCustom:{1}, record:{2})".format(stream_id, isCustom, ",".join([ str(i) for i in data.get('record', [0,0,0])])))
+                    self.dlog.logger.info('Send To Record (streamID:{0}, isCustom:{1}, record:{2})'.format(stream_id, isCustom, ','.join([ str(i) for i in data.get('record', [0,0,0])])))
             except Exception as e:
-                self.dlog.logger.error("Error@save_one_delay.record.save_audio", exc_info=True)
+                self.dlog.logger.error('Error@save_one_delay.record.save_audio', exc_info=True)
 
             #post result to callback url
             try:
                 postdata = copy.deepcopy(data)
                 self._callbackQueue.put(json.dumps(postdata))
             except Exception as e:
-                self.dlog.logger.error("Error@save_one_uniq.send_to_callback", exc_info=True)
+                self.dlog.logger.error('Error@save_one_uniq.send_to_callback', exc_info=True)
 
             if self._mdb:
                 now_date = datetime.datetime.utcnow().strftime('%Y-%m-%d')
@@ -300,23 +293,22 @@ class Backup:
                         now_date
                     )
                 try:
-                    self._mdb.execute(self._sql, params)
-                    self._mdb.commit()
+                    self._mdb.insert_results(params)
                     return True
                 except Exception as e:
-                    self.dlog.logger.error("Error@save_one_delay.db_execute", exc_info=True)
+                    self.dlog.logger.error('Error@save_one_delay.db_execute', exc_info=True)
         return False
 
     def utc2local(self, utc_str):
         try:
-            local_str = ""
-            utc = datetime.datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S")
+            local_str = ''
+            utc = datetime.datetime.strptime(utc_str, '%Y-%m-%d %H:%M:%S')
             epoch = time.mktime(utc.timetuple())
             offset = datetime.datetime.fromtimestamp (epoch) - datetime.datetime.utcfromtimestamp (epoch)
             local = utc + offset
-            local_str = local.strftime("%Y-%m-%d %H:%M:%S")
+            local_str = local.strftime('%Y-%m-%d %H:%M:%S')
         except Exception as e:
-            self.dlog.logger.error("Error@utc2local, utc:{0}".format(utc_str), exc_info=True)
+            self.dlog.logger.error('Error@utc2local, utc:{0}'.format(utc_str), exc_info=True)
         return local_str
 
     def save_one(self, jsondata):
@@ -342,11 +334,11 @@ class Backup:
                         del jsondata['result']['metadata']['custom_files']
                         ret = self.save_one_uniq(jsondata, 0)
                     else:
-                        jsondata['result'] = {u'status': {u'msg': u'No result', u'code': 1001, u'version': u'1.0'}}
+                        jsondata['result'] = { 'status': { 'msg': 'No result', 'code': 1001, 'version': '1.0'}}
                         ret = self.save_one_uniq(jsondata, 0)
                     ret = self.save_one_uniq(custom_data, 1)
                 elif 'metadata' in jsondata['result'] and 'music' in jsondata['result']['metadata']:
-                    custom_data['result'] = {u'status': {u'msg': u'No result', u'code': 1001, u'version': u'1.0'}}
+                    custom_data['result'] = {'status': {'msg': 'No result', 'code': 1001, 'version': '1.0'}}
                     ret = self.save_one_uniq(custom_data, 1)
                     ret = self.save_one_uniq(jsondata, 0)
 
@@ -361,17 +353,17 @@ class Backup:
                         del jsondata['result']['metadata']['custom_files']
                         ret = self.save_one_delay(jsondata, 0)
                     else:
-                        jsondata['result'] = {u'status': {u'msg': u'No result', u'code': 1001, u'version': u'1.0'}}
+                        jsondata['result'] = {'status': {'msg': 'No result', 'code': 1001, 'version': '1.0'}}
                         ret = self.save_one_delay(jsondata, 0)
                     ret = self.save_one_delay(custom_data, 1)
                 elif 'metadata' in jsondata['result'] and 'music' in jsondata['result']['metadata']:
-                    custom_data['result'] = {u'status': {u'msg': u'No result', u'code': 1001, u'version': u'1.0'}}
+                    custom_data['result'] = {'status': {'msg': 'No result', 'code': 1001, 'version': '1.0'}}
                     ret = self.save_one_delay(custom_data, 1)
                     ret = self.save_one_delay(jsondata, 0)
             if ret:
-                self.dlog.logger.info("MSG@Result_Save_Success({0})".format(jsondata.get("stream_id")))
+                self.dlog.logger.info('MSG@Result_Save_Success({0})'.format(jsondata.get('stream_id')))
         except Exception as e:
-            self.dlog.logger.error("Error@save_one", exc_info=True)
-            self.dlog.logger.error("Error_Data:{0}, {1}".format(jsondata.get('stream_id'), jsondata.get('result')))
+            self.dlog.logger.error('Error@save_one', exc_info=True)
+            self.dlog.logger.error('Error_Data:{0}, {1}'.format(jsondata.get('stream_id'), jsondata.get('result')))
         return ret
 

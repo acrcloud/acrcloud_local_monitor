@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
-
 import os
 import sys
 import json
@@ -12,9 +9,6 @@ import datetime
 import traceback
 import tools_str_sim
 from dateutil.relativedelta import *
-
-reload(sys)
-sys.setdefaultencoding('utf8')
 
 NORESULT = 'noResult'
 
@@ -43,7 +37,7 @@ class ResultFilter(object):
 
     def is_noresult(self, ins):
         ins_type = type(ins)
-        if ins_type == str or ins_type == unicode:
+        if ins_type == str:
             if ins.strip() in ['noResult', 'noresult', NORESULT]:
                 return True
             else:
@@ -618,7 +612,7 @@ class ResultFilter(object):
                             'p_weight': cfirst_result_brief['score']
                         })
                     ]
-                    self.dlog.logger.warn('Stream_id:{0}, Find two not continuous.Title:{1}, Ftime:{2}, Index:[{3}, {4}]'.format(stream_id, sorted_fitem_title, cfirst_result_brief['timestamp_utc'], cfirst_index, csecond_index))
+                    self.dlog.logger.warning('Stream_id:{0}, Find two not continuous.Title:{1}, Ftime:{2}, Index:[{3}, {4}]'.format(stream_id, sorted_fitem_title, cfirst_result_brief['timestamp_utc'], cfirst_index, csecond_index))
 
             sim_title_set, sim_index_set = self.delay_find_interset_title(sorted_title_list, history_data)
 
@@ -780,7 +774,7 @@ class ResultFilter(object):
                             'p_weight': cfirst_result_brief['score']
                         })
                     ]
-                    self.dlog.logger.warn('Stream_id:{0}, Find two not continuous.Title:{1}, Ftime:{2}, Index:[{3}, {4}]'.format(stream_id, sorted_fitem_title, cfirst_result_brief['timestamp_utc'], cfirst_index, csecond_index))
+                    self.dlog.logger.warning('Stream_id:{0}, Find two not continuous.Title:{1}, Ftime:{2}, Index:[{3}, {4}]'.format(stream_id, sorted_fitem_title, cfirst_result_brief['timestamp_utc'], cfirst_index, csecond_index))
 
             sim_title_set, sim_index_set = self.delay_find_interset_title(sorted_title_list, history_data)
 

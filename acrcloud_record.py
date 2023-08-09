@@ -1,15 +1,7 @@
-#!/usr/bin/env python
-#-*- coding:utf-8
-#
-# Author: quqiang
-# Date: 2016/02/24
-# Email: qiang@acrcloud.com
-#
-
 import os
 import sys
 import json
-import Queue
+import queue
 import random
 import signal
 import struct
@@ -22,16 +14,13 @@ from dateutil.relativedelta import *
 sys.path.append("..")
 from acrcloud_logger import AcrcloudLogger as recordLogger
 
-reload(sys)
-sys.setdefaultencoding("utf8")
-
 class RecordWorker:
 
     def __init__(self, config, workQueue):
         self.config = config
-        self.record_keep_days = config["record"]["record_save_days"]
-        self.record_dir = config["record"]["record_dir"]
-        self.logdir = config["log"]["dir"]
+        self.record_keep_days = config['record']['record_save_days']
+        self.record_dir = config['record']['record_dir']
+        self.logdir = config['log']['dir']
         self.workQueue = workQueue
         self.recordDict = {} # key: stream_id, value: [(timestamp, record_before, record_after, now_buf, before_buf), ...]
         self.record_max_len = 100
@@ -41,14 +30,14 @@ class RecordWorker:
         #signal.signal(signal.SIGQUIT, self.signal_handler)
 
     def initLog(self):
-        self.dlog = recordLogger("RecordLog", logging.INFO)
-        if not self.dlog.addFilehandler(logfile = "recordLog.lst", logdir = self.logdir):
+        self.dlog = recordLogger('RecordLog', logging.INFO)
+        if not self.dlog.addFilehandler(logfile = 'recordLog.lst', logdir = self.logdir):
             sys.exit(1)
         if not self.dlog.addStreamHandler():
             sys.exit(1)
 
     def signal_handler(self, signal, frame):
-        self.dlog.logger.error("Receive signal.SIGQUIT, recordWorker exit")
+        self.dlog.logger.error('Receive signal.SIGQUIT, recordWorker exit')
         sys.exit(1)
 
     def test_record_dir(self):
@@ -56,8 +45,8 @@ class RecordWorker:
             if not os.path.exists(self.record_dir):
                 os.mkdir(self.record_dir)
         except Exception as e:
-            self.dlog.logger.error("Error@Record_Worker.test_record_dir", exc_info=True)
-            self.dlog.logger.error("Error@Record_Worker.record_worker will exit, please check record_dir")
+            self.dlog.logger.error('Error@Record_Worker.test_record_dir', exc_info=True)
+            self.dlog.logger.error('Error@Record_Worker.record_worker will exit, please check record_dir')
 
     def check_expire_dir(self):
         try:
@@ -66,12 +55,12 @@ class RecordWorker:
                 if nowtime.hour == 0 and nowtime.minute < 5:
                     self.auto_delete_overtime_records()
         except Exception as e:
-            self.dlog.logger.error("Error@Record_Worker.check_expire_dir", exc_info=True)
+            self.dlog.logger.error('Error@Record_Worker.check_expire_dir', exc_info=True)
 
     def auto_delete_overtime_records(self):
         try:
-            self.dlog.logger.info("MSG@Record_Worker.auto_delete_overtime_records start...")
-            expire_date_str = (datetime.datetime.utcnow() - relativedelta(days=self.record_keep_days)).strftime("%Y%m%d")
+            self.dlog.logger.info('MSG@Record_Worker.auto_delete_overtime_records start...')
+            expire_date_str = (datetime.datetime.utcnow() - relativedelta(days=self.record_keep_days)).strftime('%Y%m%d')
             stream_list = []
             for root, dirs, files in os.walk(self.record_dir):
                 stream_list = dirs
@@ -92,9 +81,9 @@ class RecordWorker:
                                     os.remove(file_path)
                                     #print "delete file: ", file_path
                         os.rmdir(stream_date_record_dir)
-                        self.dlog.logger.warning("Warn@Record_Worker.remove_expire_date_record_dir: {0} delete success".format(stream_date_record_dir))
+                        self.dlog.logger.warning('Warn@Record_Worker.remove_expire_date_record_dir: {0} delete success'.format(stream_date_record_dir))
         except Exception as e:
-            self.dlog.logger.error("Error@Record_Worker.auto_delete_overtime_records", exc_info=True)
+            self.dlog.logger.error('Error@Record_Worker.auto_delete_overtime_records', exc_info=True)
 
     def save_record(self, streamId, acrId, timestamp, audio_file):
         try:
@@ -107,7 +96,7 @@ class RecordWorker:
             if not os.path.exists(datePath):
                 os.mkdir(datePath)
             filePath = os.path.join(datePath, fileName)
-            with open(filePath, "wb") as wfile:
+            with open(filePath, 'wb') as wfile:
                 wfile.write(audio_file)
             return True
         except Exception as e:
@@ -169,17 +158,17 @@ class RecordWorker:
         return played_duration
 
     def get_timestamp_utc(self, info):
-        timestamp_utc = ""
+        timestamp_utc = ''
         try:
-            if info["status"]["code"] == 0:
-                if "metadata" in info and "timestamp_utc" in info["metadata"]:
-                    timestamp_utc = info["metadata"]["timestamp_utc"]
+            if info['status']['code'] == 0:
+                if 'metadata' in info and 'timestamp_utc' in info['metadata']:
+                    timestamp_utc = info['metadata']['timestamp_utc']
         except Exception as e:
-            self.dlog.logger.error("Error@Record_Worker.get_timestamp_utc.error_data: {0}".format(info), exc_info=True)
+            self.dlog.logger.error('Error@Record_Worker.get_timestamp_utc.error_data: {0}'.format(info), exc_info=True)
         return timestamp_utc
 
     def format_timestamp(self, timestr):
-        return datetime.datetime.strptime(timestr, "%Y-%m-%d %H:%M:%S").strftime('%Y%m%d%H%M%S')
+        return datetime.datetime.strptime(timestr, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M%S')
 
     def deal_add(self, info):
         try:
@@ -192,14 +181,14 @@ class RecordWorker:
                 if stream_id not in self.recordDict:
                     self.recordDict[stream_id] = []
                 record_before = record[1]
-                before_buf = ""
-                """
+                before_buf = ''
+                '''
                 for item in self.recordDict[stream_id]:
                     before_buf = item[3] + before_buf
                     if len(before_buf) >= record_before*16000:
                         before_buf = before_buf[-record_before*16000:]
                         break
-                """
+                '''
                 #数据进行recordDict头插
                 self.recordDict[stream_id].insert(0, (timestamp, record[1], record[2], pem_file, before_buf))
                 #避免保存的数据过多
@@ -221,7 +210,7 @@ class RecordWorker:
 
             #相对偏差，准确的开始播放时间timestamp_utc相对于timestamp的前后偏差值
             #该值可为正负，正代表开始时间在timestamp之前，负代表开始时间在timestamp之后
-            tformat = "%Y-%m-%d %H:%M:%S"
+            tformat = '%Y-%m-%d %H:%M:%S'
             relative_deviation = int((datetime.datetime.strptime(timestamp, tformat) - datetime.datetime.strptime(timestamp_utc, tformat)).total_seconds())
 
             if stream_id and timestamp_format:
@@ -298,7 +287,7 @@ class RecordWorker:
                 break
             try:
                 recinfo = self.workQueue.get()
-            except Queue.Empty:
+            except queue.Empty:
                 continue
             if recinfo[0] == 'add':
                 self.deal_add(recinfo[1])

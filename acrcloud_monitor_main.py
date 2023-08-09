@@ -1,19 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-  @author: qiang
-  @E-mail: qiang@acrcloud.com
-  @verion: 8.0.0
-  @create: 2016.05.17
-"""
-
 import os
 import sys
 import json
 import time
 import copy
-import Queue
+import queue
 import random
 import psutil
 import requests
@@ -27,14 +17,10 @@ from acrcloud_worker import Worker_Manager
 from acrcloud_logger import AcrcloudLogger
 from acrcloud_state import StateWorker
 from acrcloud_result import Acrcloud_Result
-
-reload(sys)
-sys.setdefaultencoding("utf8")
-
 from acrcloud_config import config
 
-
 class AcrcloudMana:
+
     def __init__ (self, config):
         self.monitor = Acrcloud_Monitor_Main(config)
         self.monitor.start()
@@ -45,11 +31,11 @@ class AcrcloudMana:
         self.initLog()
 
     def initLog(self):
-        self.colorfmt = "$MAGENTA%(asctime)s$RESET - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
+        self.colorfmt = '$MAGENTA%(asctime)s$RESET - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET'
         self.dlog = AcrcloudLogger('Acrcloud@Client', logging.INFO)
         if not self.dlog.addFilehandler(logfile = "ClientRequest.log",
                                         logdir = config["log"]["dir"],
-                                        loglevel = logging.WARN):
+                                        loglevel = logging.WARNING):
             sys.exit(1)
         if not self.dlog.addStreamHandler(self.colorfmt):
             sys.exit(1)
@@ -101,10 +87,10 @@ class AcrcloudMana:
                 elif cmd_info[1] == 'ping':
                     ret = self.monitor.ping_state()
                 else:
-                    ret = "NOT_STORED"
+                    ret = 'NOT_STORED'
                 return ret
             else:
-                return "ERROR"
+                return 'ERROR'
         elif len(datainfo) == 1:
             cmd_info = datainfo[0].split()
             if cmd_info[0] == 'get':
@@ -114,11 +100,11 @@ class AcrcloudMana:
                     sd = self.monitor.get_status(id.strip())
                     return 'VALUE {0} 0 {1}\r\n{2}'.format(cmd_info[1], len(sd), sd)
                 else:
-                    return "END"
+                    return 'END'
             else:
                 return 'ERROR'
         else:
-            return "ERROR"
+            return 'ERROR'
 
 
 class Acrcloud_Monitor_Main(threading.Thread):
@@ -126,7 +112,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
     def __init__(self, config):
         threading.Thread.__init__(self)
         self.setDaemon(True)
-        self.main_queue = Queue.Queue() #multiprocessing.Queue()
+        self.main_queue = queue.Queue() #multiprocessing.Queue()
         self.config = config
         self.access_key = config['user']['access_key']
         self.api_url = config['user']['api_url']
@@ -157,9 +143,9 @@ class Acrcloud_Monitor_Main(threading.Thread):
         self.dlog.logger.info('Init Acrcloud Monitor Main Success')
 
     def init_log(self):
-        colorformat = "$MAGENTA%(asctime)s - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET"
+        colorformat = '$MAGENTA%(asctime)s - $RED%(name)-20s$RESET - $COLOR%(levelname)-8s$RESET - $COLOR%(message)s$RESET'
         self.dlog = AcrcloudLogger('MonitorMain', logging.INFO)
-        if not self.dlog.addFilehandler(logfile = "monitor_main.log",
+        if not self.dlog.addFilehandler(logfile = 'monitor_main.log',
                                         logdir = self.log_dir,
                                         loglevel = logging.INFO):
             sys.exit(1)
@@ -169,7 +155,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
     def init_configuration(self):
         cpu_core = multiprocessing.cpu_count()
         self.monitor_manager_num = self.config['server'].get('streamManagerNum', 4)
-        self.log_dir = self.config["log"]["dir"]
+        self.log_dir = self.config['log']['dir']
 
         self.monitor_index = 0
         self.monitor_dict = dict() # key: stream id, value: stream info
@@ -220,7 +206,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
             url = api_url.format(access_key)
             stream_ids = [ sid.strip() for sid in stream_ids if sid.strip()]
             if len(stream_ids) > 0:
-                url += "&stream_ids=" + ",".join(stream_ids)
+                url += '&stream_ids=' + ','.join(stream_ids)
 
             r = requests.get(url)
             streaminfo = r.json()
@@ -234,21 +220,21 @@ class Acrcloud_Monitor_Main(threading.Thread):
             info_list = json.loads(stream_data)
 
             #get access_secret
-            access_secret = info_list.get("access_secret")
+            access_secret = info_list.get('access_secret')
             if not access_secret:
-                self.dlog.logger.error("Error@init_streams.get access_secret failed, exit!")
+                self.dlog.logger.error('Error@init_streams.get access_secret failed, exit!')
                 sys.exit(1)
             else:
-                self.dlog.logger.warn("Warn@init_streams.get access_info success")
+                self.dlog.logger.warn('Warn@init_streams.get access_info success')
 
             #get callback info
-            self.callback_url = info_list.get("callback_url", "")
-            self.callback_type = info_list.get("callback_type", 2) #1.Form, 2.Json
+            self.callback_url = info_list.get('callback_url', '')
+            self.callback_type = info_list.get('callback_type', 2) #1.Form, 2.Json
             if self.callback_type not in [1, 2, '1', '2']:
                 self.callback_type = 2
             #get state callback info
-            self.state_callback_url = info_list.get("state_callback_url", "")
-            self.state_callback_type = info_list.get("state_callback_type", 2) #1.Form, 2.Json
+            self.state_callback_url = info_list.get('state_callback_url', '')
+            self.state_callback_type = info_list.get('state_callback_type', 2) #1.Form, 2.Json
             if self.state_callback_type not in [1, 2, '1', '2']:
                 self.state_callback_type = 2
 
@@ -266,15 +252,15 @@ class Acrcloud_Monitor_Main(threading.Thread):
                 new_stream_ids.add(stream_id)
                 if stream_id not in self.monitor_dict:
                     if self._do_add_monitor(jsoninfo, False):
-                        self.dlog.logger.warn("Add Stream Success:\n {0}".format(jsoninfo))
+                        self.dlog.logger.warn('Add Stream Success:\n {0}'.format(jsoninfo))
                     else:
-                        self.dlog.logger.error("Add Stream Failed:\n {0}".format(jsoninfo))
+                        self.dlog.logger.error('Add Stream Failed:\n {0}'.format(jsoninfo))
         except Exception as e:
             self.dlog.logger.error('Error@init_streams', exc_info=True)
 
     def refresh(self):
         try:
-            for stream_id in self.monitor_dict.keys():
+            for stream_id in list(self.monitor_dict.keys()):
                 self._do_del_monitor({'stream_id': stream_id})
             time.sleep(15)
             self.init_streams()
@@ -285,7 +271,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
 
     def stop(self):
         try:
-            for stream_id in self.monitor_dict.keys():
+            for stream_id in list(self.monitor_dict.keys()):
                 self._do_del_monitor({'stream_id': stream_id})
             for smanager_handler_key in self.monitor_manager_pool:
                 smanager_handler = self.monitor_manager_pool[smanager_handler_key]
@@ -300,12 +286,12 @@ class Acrcloud_Monitor_Main(threading.Thread):
     def _do_add_monitor(self, jsoninfo, isbackup=True):
         try:
             stream_id = jsoninfo.get('stream_id')
-            if stream_id not in self.monitor_dict.keys():
+            if stream_id not in list(self.monitor_dict.keys()):
                 self.monitor_index += 1
                 smanager_handler = self.monitor_manager_pool[self.monitor_index % self.monitor_manager_num]
                 smanager_handler.add_task('add', jsoninfo)
                 timestamp = self.get_timestamp()
-                self.monitor_dict[stream_id] = [self.monitor_index, jsoninfo, timestamp, "add"]
+                self.monitor_dict[stream_id] = [self.monitor_index, jsoninfo, timestamp, 'add']
                 if isbackup:
                     self.run_backup()
                 self.dlog.logger.warn('ADD Stream ({0}, {1})'.format(jsoninfo['stream_id'], jsoninfo['stream_url']))
@@ -337,10 +323,10 @@ class Acrcloud_Monitor_Main(threading.Thread):
         try:
             if stream_id == 'all':
                 stat = list()
-                for id in self.monitor_dict.keys():
+                for id in list(self.monitor_dict.keys()):
                     radiostat = self.get_one_status(id)
                     stat.append(radiostat)
-                return json.dumps({"response":stat})
+                return json.dumps({'response': stat})
 
             ids = stream_id.strip().split(',')
             #ids = list(set(ids))
@@ -354,11 +340,11 @@ class Acrcloud_Monitor_Main(threading.Thread):
                         tmp['stream_id'] = id
                         radiostat = tmp
                     stat.append(radiostat)
-                return json.dumps({"response":stat})
+                return json.dumps({'response': stat})
             elif len(ids) == 1:
                 if ids[0] in self.monitor_dict:
                     radiostat = self.get_one_status(ids[0])
-                    return json.dumps({"response":radiostat})
+                    return json.dumps({'response': radiostat})
                 else:
                     tmp = invalidstat.copy()
                     tmp['stream_id'] = ids[0]
@@ -371,28 +357,28 @@ class Acrcloud_Monitor_Main(threading.Thread):
 
     def get_one_status(self, stream_id):
         radiostat = {
-            "status":0, "code":0, "msg":"running", "type":"unknown",
-            "stream_id":stream_id,
-            "stream_url":self.monitor_dict[stream_id][1]["stream_url"],
-            "stream_spare_urls":self.monitor_dict[stream_id][1].get("stream_spare_urls", []),
-            "access_key":self.monitor_dict[stream_id][1]["access_key"],
-            "createTime":self.monitor_dict[stream_id][2],
-            "record":self.monitor_dict[stream_id][1].get('record', 0),
-            "delay":self.monitor_dict[stream_id][1].get('delay', 1),
-            "record_before":self.monitor_dict[stream_id][1].get('record_before', 0),
-            "record_after":self.monitor_dict[stream_id][1].get('record_after', 0),
-            "callback_type":self.monitor_dict[stream_id][1].get('callback_type', -1),
-            "post_raw_result":self.monitor_dict[stream_id][1].get('post_raw_result', 0),
-            "callback":"",
+            'status': 0, 'code': 0, 'msg': 'running', 'type': 'unknown',
+            'stream_id': stream_id,
+            'stream_url': self.monitor_dict[stream_id][1]['stream_url'],
+            'stream_spare_urls': self.monitor_dict[stream_id][1].get('stream_spare_urls', []),
+            'access_key': self.monitor_dict[stream_id][1]['access_key'],
+            'createTime':self.monitor_dict[stream_id][2],
+            'record': self.monitor_dict[stream_id][1].get('record', 0),
+            'delay': self.monitor_dict[stream_id][1].get('delay', 1),
+            'record_before':self.monitor_dict[stream_id][1].get('record_before', 0),
+            'record_after': self.monitor_dict[stream_id][1].get('record_after', 0),
+            'callback_type': self.monitor_dict[stream_id][1].get('callback_type', -1),
+            'post_raw_result': self.monitor_dict[stream_id][1].get('post_raw_result', 0),
+            'callback': '',
         }
         state_info = self.state_handler.get_state(stream_id)
         if state_info is not  None:
-            radiostat["status"] = state_info['code']
-            radiostat["code"] = state_info['code']
-            radiostat["msg"] = state_info['state']
-            radiostat["type"] = state_info['type']
+            radiostat['status'] = state_info['code']
+            radiostat['code'] = state_info['code']
+            radiostat['msg'] = state_info['state']
+            radiostat['type'] = state_info['type']
         if self.monitor_dict[stream_id][1]['access_key'] in self.callback_url_dict:
-            radiostat["callback"] = self.callback_url_dict[self.monitor_dict[stream_id][1]['access_key']]
+            radiostat['callback'] = self.callback_url_dict[self.monitor_dict[stream_id][1]['access_key']]
         return radiostat
 
     def ping_state(self):
@@ -403,7 +389,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
                     return 'NOT_STORED'
             return 'STORED'
         except Exception as e:
-            self.dlog.logger.error("Error@Monitor_main.ping_state", exc_info=True)
+            self.dlog.logger.error('Error@Monitor_main.ping_state', exc_info=True)
         return 'NOT_STORED'
 
     def watch_smanager(self):
@@ -411,28 +397,26 @@ class Acrcloud_Monitor_Main(threading.Thread):
             for smanager_id in self.monitor_manager_pool:
                 smanager_handler = self.monitor_manager_pool[smanager_id]
                 if not smanager_handler.is_alive():
-                    self.dlog.logger.warn("Warn@Monitor_main.watch_smanager.SID:{0} is not alive. now restart...".format(smanager_id))
+                    self.dlog.logger.warn('Warn@Monitor_main.watch_smanager.SID:{0} is not alive. now restart...'.format(smanager_id))
                     smanager_handler.start()
                     if smanager_handler.is_alive():
                         for access_key in self.callback_url_dict:
-                            smanager_handler.add_task('set_callback_url',
-                                                      {'access_key':access_key,
-                                                       'callback_url':self.callback_url_dict[access_key]})
+                            smanager_handler.add_task('set_callback_url', {'access_key':access_key, 'callback_url':self.callback_url_dict[access_key]})
                         for stream_id in self.monitor_dict:
                             monitor_index, jsoninfo, timestamp, from_type = self.monitor_dict[stream_id]
-                            if from_type == "pause":
+                            if from_type == 'pause':
                                 continue
                             if monitor_index % self.monitor_manager_num == smanager_id:
                                 smanager_handler.add_task('add', jsoninfo)
                     time.sleep(0.5)
         except Exception as e:
-            self.dlog.logger.error("Error@Monitor_main.watch_smanager", exc_info=True)
+            self.dlog.logger.error('Error@Monitor_main.watch_smanager', exc_info=True)
 
     def deal_task(self, itype, jsoninfo_raw):
         try:
             time.sleep(0.1)
         except Exception as e:
-            self.dlog.logger.error("Error@Monitor_main.watch", exc_info=True)
+            self.dlog.logger.error('Error@Monitor_main.watch', exc_info=True)
 
     def auto_refresh(self):
         try:
@@ -442,7 +426,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
                 self.refresh_tobj = now_tobj
                 self.refresh()
         except Exception as e:
-            self.dlog.logger.error("Error@auto_refresh", exc_info=True)
+            self.dlog.logger.error('Error@auto_refresh', exc_info=True)
 
     def run(self):
         self.running = True
@@ -450,7 +434,7 @@ class Acrcloud_Monitor_Main(threading.Thread):
             try:
                 itype, info = self.main_queue.get(timeout=10)
                 self.deal_task(itype, info)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             if random.random() < 0.5:
                 self.auto_refresh()

@@ -1,0 +1,8 @@
+psutil
+Twisted
+requests
+fuzzywuzzy
+beautifulsoup4
+python-dateutil
+pymysql
+typing

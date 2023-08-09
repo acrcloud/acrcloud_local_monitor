@@ -1,18 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# author: johny
-# date:2016/02/29
-# email: qiang@acrcloud.com
-
 import sys
 import time
 import json
 import copy
-import Queue
+import queue
 import random
-import urllib
-import urllib2
 import requests
 import datetime
 import logging
@@ -24,9 +15,6 @@ from acrcloud_logger import AcrcloudLogger as stateLogger
 
 import socket
 socket.setdefaulttimeout(30)
-
-reload(sys)
-sys.setdefaultencoding("utf8")
 
 class StateWorker(threading.Thread):
 
@@ -47,7 +35,7 @@ class StateWorker(threading.Thread):
         self.dlog.logger.info('INFO@Init_StateWorker Success!')
 
     def initLog(self):
-        self.dlog = stateLogger("StateLog", logging.INFO)
+        self.dlog = stateLogger('StateLog', logging.INFO)
         if not self.dlog.addFilehandler(logfile = self.state_log, logdir = self.state_log_dir):
             sys.exit(1)
         if not self.dlog.addStreamHandler():
@@ -59,16 +47,16 @@ class StateWorker(threading.Thread):
             if stream_id in self.post_state_dict:
                 history_post_state = self.post_state_dict[stream_id]
                 post_flag = False
-                for k in ["state", "type"]:
+                for k in ['state', 'type']:
                     if history_post_state[k] != self.state_dict[stream_id][k]:
                         post_flag = True
                         break
-                if post_flag == False and self.state_dict["timestamp"].split(" ")[0] != history_post_state["timestamp"].split(" ")[0]:
+                if post_flag == False and self.state_dict['timestamp'].split(' ')[0] != history_post_state['timestamp'].split(' ')[0]:
                     post_flag = True
                 if_post = post_flag
             self.post_state_dict[stream_id] = copy.deepcopy(self.state_dict[stream_id])
         except Exception as e:
-            self.dlog.logger.error("Error@check_if_post:{0}".format(stream_id))
+            self.dlog.logger.error('Error@check_if_post:{0}'.format(stream_id))
         return if_post
 
     def post_state(self, stream_id, msg, timestamp):
@@ -79,7 +67,7 @@ class StateWorker(threading.Thread):
             if self.state_dict[stream_id]['state'] in ['running'] and self.state_dict[stream_id]['type'] == 'unknown':
                 return
 
-            if self.state_dict[stream_id]['state'] == "timeout" and random.random() < 0.8:
+            if self.state_dict[stream_id]['state'] == 'timeout' and random.random() < 0.8:
                 return
 
             if not self.check_if_post(stream_id):
@@ -88,13 +76,13 @@ class StateWorker(threading.Thread):
             headers = {'content-type': 'application/json'}
 
             post_list = [self.state_dict[stream_id]]
-            post_data = {"status": post_list}
-            if self.state_callback_url.startswith("https"):
+            post_data = {'status': post_list}
+            if self.state_callback_url.startswith('https'):
                 response = requests.post(self.state_callback_url, data=json.dumps(post_data), headers=headers, verify=False, timeout=self.timeout)
             else:
                 response = requests.post(self.state_callback_url, data=json.dumps(post_data), headers=headers, timeout=self.timeout)
 
-            self.dlog.logger.warn("Warn@state_callback.post_success.streamID:{0}, res_code:{1}, res_text:{2}".format(",".join([item['stream_id']
+            self.dlog.logger.warning('Warn@state_callback.post_success.streamID:{0}, res_code:{1}, res_text:{2}'.format(','.join([item['stream_id']
  + '|#|' + item['state'] for item in post_list]), response.status_code, response.text[:100]))
 
         except Exception as e:
@@ -122,12 +110,12 @@ class StateWorker(threading.Thread):
                     self.state_dict[stream_id]['code'] = int(state_code)
                     self.state_dict[stream_id]['type'] = type_msg
                 elif index == 0:
-                    state_info = msg.split("#")
+                    state_info = msg.split('#')
                     if len(state_info) == 4:
                         state_code, state_msg, ffmpeg_code, ffmpeg_msg = state_info
                     else:
                         state_code, state_msg = state_info
-                        ffmpeg_code, ffmpeg_msg = 0, ""
+                        ffmpeg_code, ffmpeg_msg = 0, ''
                     self.state_dict[stream_id]['state'] = state_msg
                     self.state_dict[stream_id]['code'] = int(state_code)
                     self.state_dict[stream_id]['ffmpeg_code'] = str(ffmpeg_code)
@@ -144,7 +132,7 @@ class StateWorker(threading.Thread):
         while 1:
             try:
                 stateinfo = self.state_queue.get()
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             self.update_state(stateinfo)
 

@@ -1,21 +1,12 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# author: johny
-# date:2016/01/22
-# email: qiang@acrcloud.com
-
 import sys
 import ssl
 import time
 import json
-import Queue
+import queue
 import signal
 import socket
 import random
 import requests
-import urllib
-import urllib2
 import datetime
 import logging
 import traceback
@@ -23,9 +14,6 @@ import threading
 from random import choice
 from acrcloud_config import config as all_config
 from acrcloud_logger import AcrcloudLogger as postLogger
-
-reload(sys)
-sys.setdefaultencoding("utf8")
 
 socket.setdefaulttimeout(60)
 
@@ -53,7 +41,7 @@ class PostWorker(threading.Thread):
         self.timeout = 30
 
         self.initLog()
-        self.dlog.logger.warn("Warn@Init Post Worker Success")
+        self.dlog.logger.warning('Warn@Init Post Worker Success')
 
     def initLog(self):
         self.dlog = postLogger("PostLog_{0}".format(self.pwid), logging.INFO)
@@ -131,7 +119,7 @@ class PostWorker(threading.Thread):
                 if random.random() < 0.2:
                     postQueueSize = self.postQueue.qsize()
                     self.dlog.logger.info('postQueue Size: {0}'.format(postQueueSize))
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             except Exception as e:
                 traceback.print_exc()
@@ -152,16 +140,16 @@ class PostManager:
         self.initLog()
         self.init_post_worker()
         self.outside_ip = self.get_outside_ip()
-        self.dlog.logger.warn("Warn@Init PostManager success!")
+        self.dlog.logger.warning("Warn@Init PostManager success!")
         #signal.signal(signal.SIGQUIT, self.signal_handler)
 
     def signal_handler(self, signal, frame):
-        self.dlog.logger.error("Receive signal.SIGQUIT, postWorker exit")
+        self.dlog.logger.error('Receive signal.SIGQUIT, postWorker exit')
         sys.exit(1)
 
     def initLog(self):
-        self.dlog = postLogger("postMananger", logging.INFO)
-        if not self.dlog.addFilehandler(logfile = "postManager.lst", logdir = self.config["log"]["dir"]):
+        self.dlog = postLogger('postMananger', logging.INFO)
+        if not self.dlog.addFilehandler(logfile = 'postManager.lst', logdir = self.config['log']['dir']):
             sys.exit(1)
         if not self.dlog.addStreamHandler():
             sys.exit(1)
@@ -169,19 +157,19 @@ class PostManager:
     def init_post_worker(self):
         try:
             for index in range(self.post_worker_num):
-                tmp_post_queue = Queue.Queue()
+                tmp_post_queue = queue.Queue()
                 tmp_post_handler = PostWorker(index, tmp_post_queue, self.config)
                 tmp_post_handler.start()
                 self.post_worker_map[index] = (tmp_post_handler, tmp_post_queue)
         except Exception as e:
-            self.dlog.logger.error("Error@init_post_worker", exc_info=True)
+            self.dlog.logger.error('Error@init_post_worker', exc_info=True)
 
     def get_outside_ip(self):
         try:
-            return urllib2.urlopen('http://ip.42.pl/raw', timeout = 15).read()
+            return requests.get('http://ip.42.pl/raw', timeout=15).text
         except Exception as e:
-            self.dlog.logger.error("Error@get_outside_ip", exc_info=True)
-        return "unknow"
+            self.dlog.logger.error('Error@get_outside_ip', exc_info=True)
+        return 'unknow'
 
     def assign_task(self, data):
         try:
@@ -211,15 +199,15 @@ class PostManager:
                 #判断回调队列任务数，如果超出则发送邮件
                 tmp_queue_size = post_worker_queue.qsize()
                 if tmp_queue_size >= self.qsize_threshold:
-                    self.do_alert(tmp_queue_size, "Callback Worker ID:{0}, Qsize:{1}".format(worker_id, tmp_queue_size))
+                    self.do_alert(tmp_queue_size, 'Callback Worker ID:{0}, Qsize:{1}'.format(worker_id, tmp_queue_size))
         except Exception as e:
-            self.dlog.logger.error("Error@assign_task.postInfo:{0}".format(data), exc_info=True)
+            self.dlog.logger.error('Error@assign_task.postInfo:{0}'.format(data), exc_info=True)
 
-    def do_alert(self, qsize=0, msg=""):
+    def do_alert(self, qsize=0, msg=''):
         try:
-            self.dlog.logger.error("Error@do_alert.Callback Task Queue Overstock. size:{0}, msg:{1}".format(qsize, msg))
+            self.dlog.logger.error('Error@do_alert.Callback Task Queue Overstock. size:{0}, msg:{1}'.format(qsize, msg))
         except Exception as e:
-            self.dlog.logger.error("Error@do_alert", exc_info=True)
+            self.dlog.logger.error('Error@do_alert', exc_info=True)
         return False
 
     def start(self):
@@ -231,8 +219,8 @@ class PostManager:
                     managerQueueSize = self.managerQueue.qsize()
                     self.dlog.logger.info('managerQueue Size: {0}'.format(managerQueueSize))
                     if managerQueueSize >= self.qsize_threshold:
-                        self.do_alert(managerQueueSize, "Callback Manageer Qsize:{0}".format(managerQueueSize))
-            except Queue.Empty:
+                        self.do_alert(managerQueueSize, 'Callback Manageer Qsize:{0}'.format(managerQueueSize))
+            except queue.Empty:
                 pass
             except Exception as e:
                 traceback.print_exc()

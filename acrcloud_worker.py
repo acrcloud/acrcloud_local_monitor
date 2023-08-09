@@ -1,11 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Author: icy
-# Email : qiang@arcloud.com
-# Date  : 2016/03/22
-#
-
 import os
 import re
 import sys
@@ -13,10 +5,8 @@ import time
 import json
 import math
 import copy
-import Queue
+import queue
 import string
-import urllib
-import urllib2
 import requests
 import logging
 import random
@@ -29,12 +19,8 @@ from random import choice
 
 from tools_url import Tools_Url
 from acrcloud_recognizer import Acrcloud_Rec_Worker
-#import acrcloud_stream_decode as acrcloud_download
 import acrcloud_stream_tool as acrcloud_download
 from acrcloud_logger import AcrcloudLogger
-
-reload(sys)
-sys.setdefaultencoding("utf8")
 
 class Worker_DownloadStream(threading.Thread):
 
@@ -70,7 +56,7 @@ class Worker_DownloadStream(threading.Thread):
 
         self.set_alive_timestamp()
 
-        self._dlog.logger.warn('Warn@Worker_DownloadStream.init.success.MID:{0}, StreamID:{1}'.format(self._manager_id, self._stream_id))
+        self._dlog.logger.warning('Warn@Worker_DownloadStream.init.success.MID:{0}, StreamID:{1}'.format(self._manager_id, self._stream_id))
 
     def initLog(self):
         self._dlog = AcrcloudLogger('Worker_{0}'.format(self._stream_id)+'(MID:'+str(self._manager_id)+')', logging.INFO)
@@ -85,34 +71,34 @@ class Worker_DownloadStream(threading.Thread):
     def initStreamInfo(self, info):
         self._stream_id = str(info.get('stream_id', ''))
         self._url_map = {
-            "url_index":-1,
-            "url_list":[],
-            "url_list_size":0,
-            "parse_url_index":-1,
-            "parse_url_list":[],
-            "parse_url_list_size":0,
-            "valid_url_index":set(),
-            "valid_url_try":False,
-            "rtsp_protocol":["udp", "tcp"],
-            "rtsp_protocol_index":0,
-            "rtsp_protocol_size":2,
+            'url_index': -1,
+            'url_list': [],
+            'url_list_size': 0,
+            'parse_url_index': -1,
+            'parse_url_list': [],
+            'parse_url_list_size': 0,
+            'valid_url_index': set(),
+            'valid_url_try': False,
+            'rtsp_protocol': ['udp', 'tcp'],
+            'rtsp_protocol_index': 0,
+            'rtsp_protocol_size': 2,
         }
         stream_url = str(info.get('stream_url', '')).strip()
         self._stream_url_now = stream_url
         stream_spare_urls = [url.strip() for url in info.get('stream_spare_urls', []) if url.strip()]
         if stream_url:
-            self._url_map["url_list"].append(stream_url)
+            self._url_map['url_list'].append(stream_url)
         if stream_spare_urls:
-            self._url_map["url_list"].extend(stream_spare_urls)
+            self._url_map['url_list'].extend(stream_spare_urls)
 
         self._new_refresh = 2
 
-        tmp_url_list = self._url_map["url_list"]
-        self._url_map["url_index"] = -1
-        self._url_map["url_list"] = list(set(self._url_map["url_list"]))
-        self._url_map["url_list"].sort(key = tmp_url_list.index)
+        tmp_url_list = self._url_map['url_list']
+        self._url_map['url_index'] = -1
+        self._url_map['url_list'] = list(set(self._url_map['url_list']))
+        self._url_map['url_list'].sort(key = tmp_url_list.index)
 
-        self._url_map["url_list_size"] = len(self._url_map["url_list"])
+        self._url_map['url_list_size'] = len(self._url_map['url_list'])
 
         self._access_key = str(info.get('access_key', ''))
         self._sinfo = {
@@ -123,7 +109,7 @@ class Worker_DownloadStream(threading.Thread):
             'stream_url':str(info.get('stream_url', '')),
             'stream_rec_type': self._stream_rec_type, #info.get('stream_rec_type', 0),
             'encode': self._encode,
-            'stream_spare_urls': self._url_map["url_list"],
+            'stream_spare_urls': self._url_map['url_list'],
             'stream_url_now': self._stream_url_now,
             'monitor_interval': int(info.get('interval', 5)),
             'monitor_length': int(info.get('monitor_length', 20)),
@@ -167,8 +153,8 @@ class Worker_DownloadStream(threading.Thread):
             self._isFirst = True
 
             self._auto_interrupt = True
-            self._auto_interrupt_interval = self._config["server"].get("auto_interrupt_interval", 2*60*60)
-            self._auto_interrupt_timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            self._auto_interrupt_interval = self._config['server'].get('auto_interrupt_interval', 2*60*60)
+            self._auto_interrupt_timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             self._auto_interrupt_flag = False
             self._auto_prevent_caching = True
             self._auto_prevent_count = 0
@@ -183,7 +169,7 @@ class Worker_DownloadStream(threading.Thread):
             self._downloadFun = acrcloud_download
             if not self._downloadFun:
                 self._dlog.logger.error('Init downloadFunc Error')
-                self.changeStat(0, "8#error@downloadfun_init#0#downloadfun_init")
+                self.changeStat(0, '8#error@downloadfun_init#0#downloadfun_init')
                 sys.exit(1)
 
         except Exception as e:
@@ -198,25 +184,25 @@ class Worker_DownloadStream(threading.Thread):
 
     def change_stream_url_new(self):
         try:
-            if (self._url_map["url_index"], self._url_map["parse_url_index"]) in self._url_map["valid_url_index"] and not self._url_map["valid_url_try"]:
-                self._url_map["valid_url_try"] = True
+            if (self._url_map['url_index'], self._url_map['parse_url_index']) in self._url_map['valid_url_index'] and not self._url_map['valid_url_try']:
+                self._url_map['valid_url_try'] = True
             else:
-                if (self._url_map["parse_url_index"] >= 0) and self._stream_url_now.startswith("rtsp") and self._url_map["rtsp_protocol_index"] == 0:
-                    self._url_map["rtsp_protocol_index"] += 1
+                if (self._url_map['parse_url_index'] >= 0) and self._stream_url_now.startswith('rtsp') and self._url_map['rtsp_protocol_index'] == 0:
+                    self._url_map['rtsp_protocol_index'] += 1
                 else:
-                    if (self._url_map["parse_url_index"] == -1) or ((self._url_map["parse_url_index"]+1) == self._url_map["parse_url_list_size"]):
-                        self._url_map["url_index"] = (self._url_map["url_index"] + 1) % self._url_map["url_list_size"]
-                        self._url_map["parse_url_list"] = list(set(self.tools_url.do_analysis_url(self._url_map["url_list"][self._url_map["url_index"]])))
-                        self._url_map["parse_url_list_size"] = len(self._url_map["parse_url_list"])
-                        self._url_map["parse_url_index"] = 0
-                        self._url_map["rtsp_protocol_index"] = 0
-                        self._url_map["valid_url_try"] = False
-                        self._stream_url_now = self._url_map["parse_url_list"][self._url_map["parse_url_index"]]
+                    if (self._url_map['parse_url_index'] == -1) or ((self._url_map['parse_url_index']+1) == self._url_map['parse_url_list_size']):
+                        self._url_map['url_index'] = (self._url_map['url_index'] + 1) % self._url_map['url_list_size']
+                        self._url_map['parse_url_list'] = list(set(self.tools_url.do_analysis_url(self._url_map['url_list'][self._url_map['url_index']])))
+                        self._url_map['parse_url_list_size'] = len(self._url_map['parse_url_list'])
+                        self._url_map['parse_url_index'] = 0
+                        self._url_map['rtsp_protocol_index'] = 0
+                        self._url_map['valid_url_try'] = False
+                        self._stream_url_now = self._url_map['parse_url_list'][self._url_map['parse_url_index']]
                     else:
-                        self._url_map["parse_url_index"] += 1
-                        self._url_map["rtsp_protocol_index"] = 0
-                        self._url_map["valid_url_try"] = False
-                        self._stream_url_now = self._url_map["parse_url_list"][self._url_map["parse_url_index"]]
+                        self._url_map['parse_url_index'] += 1
+                        self._url_map['rtsp_protocol_index'] = 0
+                        self._url_map['valid_url_try'] = False
+                        self._stream_url_now = self._url_map['parse_url_list'][self._url_map['parse_url_index']]
             self._dlog.logger.warning('Warn@Worker_DownloadStream.change_stream_url_new.do_change.now_url: {0}\nurl_map: {1}'.format(self._stream_url_now, self._url_map))
         except Exception as e:
             self._dlog.logger.error('Error@Worker_DownloadStream.change_stream_url_new, url_map: {0}'.format(self._url_map), exc_info=True)
@@ -238,13 +224,13 @@ class Worker_DownloadStream(threading.Thread):
 
     def is_auto_interrupt(self):
         if (self._auto_interrupt and random.random() < 0.2):
-            time_diff = datetime.datetime.utcnow() - datetime.datetime.strptime(self._auto_interrupt_timestamp, "%Y-%m-%d %H:%M:%S")
+            time_diff = datetime.datetime.utcnow() - datetime.datetime.strptime(self._auto_interrupt_timestamp, '%Y-%m-%d %H:%M:%S')
             if (time_diff.total_seconds() >= self._auto_interrupt_interval):
-                self._auto_interrupt_timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                self._auto_interrupt_timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
                 self._auto_interrupt_flag = True
                 self._auto_prevent_caching = True
                 self._auto_prevent_count = 0
-                self._dlog.logger.warn("@@@@@@@@ auto interrupt @@@@@@@@")
+                self._dlog.logger.warning('@@@@@@@@ auto interrupt @@@@@@@@')
                 return True
         return False
 
@@ -255,8 +241,8 @@ class Worker_DownloadStream(threading.Thread):
             self._invalid_count = 0
             self._killed_count = 0
             if self._isFirst:
-                self.changeStat(-1, "0#running#" + ("1#video" if isvideo == 1 else "0#audio"))
-                self._dlog.logger.warn("Warn@Get Stream Type: {0}".format('Video' if isvideo == 1 else 'Audio'))
+                self.changeStat(-1, '0#running#' + ('1#video' if isvideo == 1 else '0#audio'))
+                self._dlog.logger.warning('Warning@Get Stream Type: {0}'.format('Video' if isvideo == 1 else 'Audio'))
                 self._isFirst = False
             if buf:
                 buf_time_sec = len(buf)/16000.0
@@ -264,10 +250,10 @@ class Worker_DownloadStream(threading.Thread):
                 try:
                     self._worker_queue.put((self._sinfo, buf, timestamp, 0, None))
                 except Exception as e:
-                    self._dlog.logger.error("Error@Worker_DownloadStream.put_queue", exc_info=True)
+                    self._dlog.logger.error('Error@Worker_DownloadStream.put_queue', exc_info=True)
                     return 1
                 if random.random() < 0.3:
-                    self._dlog.logger.warn('Warn@Download Stream Buffer(buffer size: {0})'.format(len(buf)))
+                    self._dlog.logger.warning('Warn@Download Stream Buffer(buffer size: {0})'.format(len(buf)))
                 elif random.random() < 0.5:
                     self._dlog.logger.info('MSG@Download Stream Buffer(buffer size: {0})'.format(len(buf)))
             if self._break_download or self._restart_download:
@@ -306,7 +292,7 @@ class Worker_DownloadStream(threading.Thread):
 
                     ret_code = self.callback(int(isvideo), buf)
 
-                    self._url_map["valid_url_index"].add((self._url_map["url_index"], self._url_map["parse_url_index"]))
+                    self._url_map['valid_url_index'].add((self._url_map['url_index'], self._url_map['parse_url_index']))
                 else:
                     self._dlog.logger.error('Error@Worker_DownloadStream.callback_new.isvideo_or_buf_isNone')
                     time.sleep(5)
@@ -329,8 +315,8 @@ class Worker_DownloadStream(threading.Thread):
                 return 0, 'stop download', 0, 'ffmpeg exit'
 
             rtsp_protocol_type = self._sinfo.get('rtsp_protocol', '')
-            if not rtsp_protocol_type and self._stream_url_now.startswith("rtsp"):
-                rtsp_protocol_type = self._url_map['rtsp_protocol'][self._url_map["rtsp_protocol_index"]]
+            if not rtsp_protocol_type and self._stream_url_now.startswith('rtsp'):
+                rtsp_protocol_type = self._url_map['rtsp_protocol'][self._url_map['rtsp_protocol_index']]
 
             acrdict = {
                 'callback_func':self.callback_new,
@@ -345,7 +331,7 @@ class Worker_DownloadStream(threading.Thread):
             }
 
             if self._stream_url_now.startswith('rtsp:'):
-                acrdict["extra_opt"]['rtsp_transport'] = rtsp_protocol_type
+                acrdict['extra_opt']['rtsp_transport'] = rtsp_protocol_type
 
             self._callback_time_sec = time.time()
 
@@ -359,16 +345,16 @@ class Worker_DownloadStream(threading.Thread):
     def deal_download_ret(self, code, msg, ffmpeg_code, ffmpeg_msg):
         retflag = 0
         sleep_flag = False
-        sleep_type = ""
+        sleep_type = ''
         sleep_time = 0
         need_change_url = False
         if code == 0 or code == '0':
             self._dlog.logger.error('Error@Worker_DownloadStream.Stop_getting_data.{0}'.format(self._stream_url_now))
             if self._state_flag == 'stop':
-                self.changeStat(0, "10#delete#{0}#{1}".format(ffmpeg_code, ffmpeg_msg))
+                self.changeStat(0, '10#delete#{0}#{1}'.format(ffmpeg_code, ffmpeg_msg))
                 retflag = 2
             elif self._state_flag == 'pause':
-                self.changeStat(0, "4#pause#{0}#{1}".format(ffmpeg_code, ffmpeg_msg))
+                self.changeStat(0, '4#pause#{0}#{1}'.format(ffmpeg_code, ffmpeg_msg))
                 retflag = 2
             if self._auto_interrupt_flag:
                 self._auto_interrupt_flag = False
@@ -378,7 +364,7 @@ class Worker_DownloadStream(threading.Thread):
             if self._invalid_count > self._invalid_Threshlod:
                 if True:
                     if self._invalid_count >= 4 and self._invalid_count % 2 == 0:
-                        self.changeStat(0, "6#invalid_url#{0}#{1}".format(ffmpeg_code, ffmpeg_msg))
+                        self.changeStat(0, '6#invalid_url#{0}#{1}'.format(ffmpeg_code, ffmpeg_msg))
                         if self._stream_url_now.find('ttvnw.net') != -1:
                             ip = ""
                         else:
@@ -404,7 +390,7 @@ class Worker_DownloadStream(threading.Thread):
                 if self._dead_count > self._deadThreshold:
                     self._killed_count += 1
 
-                    self.changeStat(0, "6#invalid_url#{0}#{1}".format(ffmpeg_code, ffmpeg_msg))
+                    self.changeStat(0, '6#invalid_url#{0}#{1}'.format(ffmpeg_code, ffmpeg_msg))
 
                     self._dlog.logger.error('Error@Worker_DownloadStream.Killed.')
 
@@ -418,7 +404,7 @@ class Worker_DownloadStream(threading.Thread):
                         sleep_time = 10*60
                     need_change_url = True
                 else:
-                    self.changeStat(0, "6#invalid_url#{0}#{1}".format(ffmpeg_code, ffmpeg_msg))
+                    self.changeStat(0, '6#invalid_url#{0}#{1}'.format(ffmpeg_code, ffmpeg_msg))
 
                     need_change_url = True
                     self._dlog.logger.error('Error@Worker_DownloadStream.Dead.')
@@ -427,9 +413,9 @@ class Worker_DownloadStream(threading.Thread):
                     sleep_type = 'dead'
                     sleep_time = 2*60
             else:
-                self.changeStat(0, "1#timeout#{0}#{1}".format(ffmpeg_code, ffmpeg_msg))
+                self.changeStat(0, '1#timeout#{0}#{1}'.format(ffmpeg_code, ffmpeg_msg))
                 self._dlog.logger.error('Error@Worker_DownloadStream.Timeout.')
-                if self._stream_url_now.startswith("rtsp"):
+                if self._stream_url_now.startswith('rtsp'):
                     need_change_url = True
                 if sleep_time > 0:
                     retflag, sleep_flag, sleep_type = 0, True, 'timeout sleep for stream_time_diff'
@@ -454,7 +440,7 @@ class Worker_DownloadStream(threading.Thread):
             time.sleep(1)
             retflag = 1
         else:
-            self.changeStat(0, "6#invalid_url#{0}#{1}".format(ffmpeg_code, ffmpeg_msg))
+            self.changeStat(0, '6#invalid_url#{0}#{1}'.format(ffmpeg_code, ffmpeg_msg))
             need_change_url = True
             self._dlog.logger.error('Error@Worker_DownloadStream.Exit.{0},{1}-{2}'.format(self._stream_url_now, code, msg))
             retflag = 0
@@ -470,11 +456,11 @@ class Worker_DownloadStream(threading.Thread):
         passTime = (datetime.datetime.now() - self._sleep_start_time).total_seconds()
         if passTime >= sleep_time:
             self._sleep_start_time = None
-            self._dlog.logger.warn("Warn@Time_Sleep, Type: {0}, Sleep over, the worker will restart".format(sleep_type))
+            self._dlog.logger.warning('Warn@Time_Sleep, Type: {0}, Sleep over, the worker will restart'.format(sleep_type))
             return True
         else:
             if passTime % (5*60) == 0:
-                self._dlog.logger.info("MSG@Time_Sleep, Type: {0}, PassTime: {1}/{2} s".format(sleep_type, passTime, sleep_time))
+                self._dlog.logger.info('MSG@Time_Sleep, Type: {0}, PassTime: {1}/{2} s'.format(sleep_type, passTime, sleep_time))
             return False
 
     def run(self):
@@ -510,7 +496,7 @@ class Worker_DownloadStream(threading.Thread):
                 if break_sleep:
                     break
 
-        self._dlog.logger.warn("Warn@AcrcloudWorker.run.stream_worker_exit")
+        self._dlog.logger.warning('Warn@AcrcloudWorker.run.stream_worker_exit')
         self.clean_loghandler()
 
     def clean_loghandler(self):
@@ -537,7 +523,7 @@ class Worker_DownloadStream(threading.Thread):
         return self.alive_timestamp
 
     def set_alive_timestamp(self):
-        self.alive_timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        self.alive_timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
 class Worker_SendData(threading.Thread):
 
@@ -549,7 +535,7 @@ class Worker_SendData(threading.Thread):
             self.state_worker_queue = state_worker_queue
             self.worker_queue = worker_queue
             self.dlog = dlog
-            self.dlog.logger.warn("Warn@Worker_SendData of manager({0}) init success".format(self.manager_id))
+            self.dlog.logger.warning('Warn@Worker_SendData of manager({0}) init success'.format(self.manager_id))
 
         def run(self):
             self._running = True
@@ -557,15 +543,15 @@ class Worker_SendData(threading.Thread):
                 try:
                     try:
                         itype, datainfo = self.state_worker_queue.get(timeout=5)
-                    except Queue.Empty:
+                    except queue.Empty:
                         continue
 
                     if itype == 'state':
                         self.status_queue.put(datainfo, timeout = 2)
                     if random.random() < 0.05:
-                        self.dlog.logger.warn("Warn@Worker_SendData.stateQueue size:{0}".format(self.state_worker_queue.qsize()))
+                        self.dlog.logger.warning('Warn@Worker_SendData.stateQueue size:{0}'.format(self.state_worker_queue.qsize()))
                 except Exception as e:
-                    self.dlog.logger.error("Error@Worker_SendData.put.queue", exc_info=True)
+                    self.dlog.logger.error('Error@Worker_SendData.put.queue', exc_info=True)
 
         def stop(self):
             self._running = False
@@ -577,8 +563,8 @@ class Worker_Manager:
         self._manager_id = manager_id
         self._result_queue = result_queue
         self._status_queue = status_queue
-        self._worker_state_queue = Queue.Queue()
-        self._worker_queue = Queue.Queue()
+        self._worker_state_queue = queue.Queue()
+        self._worker_queue = queue.Queue()
         self._access_key_map = {}
         self._callback_url_map = {}
         self._config = config
@@ -589,10 +575,10 @@ class Worker_Manager:
 
         self.init_log()
 
-        self._dlog.logger.warn("Warn@Worker_Manager.Init_Success.ID:{0}".format(self._manager_id))
+        self._dlog.logger.warn('Warn@Worker_Manager.Init_Success.ID:{0}'.format(self._manager_id))
 
     def init_log(self):
-        mlogname = "Worker_Manager_{0}.log".format(self._manager_id)
+        mlogname = 'Worker_Manager_{0}.log'.format(self._manager_id)
         self._dlog = AcrcloudLogger(mlogname[:-4], logging.INFO)
         if not self._dlog.addFilehandler(logfile = mlogname[:-4], logdir = self._log_dir, loglevel = logging.WARN):
             sys.exit(1)
@@ -608,7 +594,7 @@ class Worker_Manager:
                                                  self._dlog)
             sendworker_handler.start()
         except Exception as e:
-            self._dlog.logger.error("Error@Worker_Manager.init_send_worker", exc_info=True)
+            self._dlog.logger.error('Error@Worker_Manager.init_send_worker', exc_info=True)
 
     def init_recognize_worker(self, rec_num, manager_queue):
         self._rec_index = 0
@@ -632,7 +618,7 @@ class Worker_Manager:
             stream_id = stream_info['stream_id']
             access_key = stream_info['access_key']
             if stream_id in self._thread_map:
-                self._dlog.logger.warn('Warn@Worker_Manager.add_worker.stream_thread has exists(SID:{0})'.format(stream_id))
+                self._dlog.logger.warning('Warn@Worker_Manager.add_worker.stream_thread has exists(SID:{0})'.format(stream_id))
                 return False
 
             callback_url = ''
@@ -645,7 +631,7 @@ class Worker_Manager:
             thread_handler.start()
             self._thread_map[stream_id] = thread_handler
             self._access_key_map[stream_id] = access_key
-            self._dlog.logger.warn('Warn@Worker_Manager.add_worker.success(stream_id:{0})'.format(stream_id))
+            self._dlog.logger.warning('Warn@Worker_Manager.add_worker.success(stream_id:{0})'.format(stream_id))
             return True
         except Exception as e:
             self._dlog.logger.error('Error@Worker_Manager.addWorker', exc_info=True)
@@ -692,7 +678,7 @@ class Worker_Manager:
             try:
                 try:
                     itype, stream_info = self._main_queue.get(timeout=5)
-                except Queue.Empty:
+                except queue.Empty:
                     continue
                 if itype == 'add':
                     self.add_worker(stream_info)

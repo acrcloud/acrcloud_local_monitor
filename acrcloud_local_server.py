@@ -1,15 +1,4 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
-
-#
-#  @author quqiang E-mail: qiang@acrcloud.com
-#  @version 3.0.0
-#  @create 2015.12.7
-#
-
 import sys
-reload(sys)
-sys.setdefaultencoding("utf8")
 import traceback
 from twisted.internet import reactor
 from acrcloud_monitor_main import acrcloudMana

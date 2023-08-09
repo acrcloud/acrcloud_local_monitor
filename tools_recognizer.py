@@ -9,9 +9,8 @@ import time
 import struct
 import base64
 import hashlib
-import urllib2
+import requests
 import datetime
-import mimetools
 import traceback
 import acrcloud_stream_tool as acrcloud_stream_decode
 
@@ -22,44 +21,46 @@ class acrcloud_recognize:
         self.noResult_count = 0
         self.rate = 0
 
-    def post_multipart(self, url, fields, files, timeout):
-        content_type, body = self.encode_multipart_formdata(fields, files)
-        if not content_type and not body:
-            self.dlog.logger.error('encode_multipart_formdata error')
-            return None
+    def post_multipart(self, url, pdata, files, timeout):
         try:
-            req = urllib2.Request(url, data=body)
-            req.add_header('Content-Type', content_type)
-            req.add_header('Referer', url)
-            resp = urllib2.urlopen(req, timeout=timeout)
-            ares = resp.read()
-            return ares
-        except Exception, e:
-            self.dlog.logger.error('post_multipart error', exc_info=True)
+            headers = {
+                'Accept-encoding': 'gzip'
+            }
+            r = requests.post(url, files=files, data=pdata, headers=headers)
+            r.encoding = 'utf-8'
+            if r.status_code == 200:
+                return r.text.strip()
+            else:
+                self.dlog.logger.error('post_multipart.requests.error: key:{0}, sid: {1}, r_code: {2}, r_text:{3}'.format(pdata['access_key'], pdata['stream_id'], r.status_code, r.text))
+        except Exception as e:
+            self.dlog.logger.error('post_multipart', exc_info=True)
         return None
 
     def encode_multipart_formdata(self, fields, files):
         try:
-            boundary = mimetools.choose_boundary()
+            boundary = '*****2016.05.27.acrcloud.rec.copyright.' + str(time.time()) + '*****'
+            body = b''
             CRLF = '\r\n'
             L = []
-            for (key, value) in fields.items():
+            for (key, value) in list(fields.items()):
                 L.append('--' + boundary)
                 L.append('Content-Disposition: form-data; name="%s"' % key)
                 L.append('')
-                L.append(str(value))
-            for (key, value) in files.items():
-                L.append('--' + boundary)
+                L.append(value)
+
+            body = bytes(CRLF.join(L), encoding='utf-8')
+
+            for (key, value) in list(files.items()):
+                L = []
+                L.append(CRLF + '--' + boundary)
                 L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, key))
                 L.append('Content-Type: application/octet-stream')
-                L.append('')
-                L.append(value)
-            L.append('--' + boundary + '--')
-            L.append('')
-            body = CRLF.join(L)
+                L.append(CRLF)
+                body = body + CRLF.join(L).encode('ascii') + value
+            body = body + (CRLF + '--' + boundary + '--' + CRLF + CRLF).encode('ascii')
             content_type = 'multipart/form-data; boundary=%s' % boundary
             return content_type, body
-        except Exception, e:
+        except Exception as e:
             self.dlog.logger.error('encode_multipart_formdata error', exc_info=True)
         return None, None
 
@@ -105,33 +106,36 @@ class acrcloud_recognize:
             else:
                 return pcm_buf
         except Exception as e:
-            self.dlog.logger.error("Error@pcm_to_aac", exc_info=True)
+            self.dlog.logger.error('Error@pcm_to_aac', exc_info=True)
         return ''
 
     def gen_fp(self, buf, rate=0):
         return acrcloud_stream_decode.create_fingerprint(buf, False, 300, 0.3)
 
     def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=10):
-        http_method = "POST"
-        http_url_file = "/v1/monitor/identify"
+        http_method = 'POST'
+        http_url_file = '/v1/monitor/identify'
         data_type = query_type
-        signature_version = "1"
+        signature_version = '1'
         timestamp = int(time.mktime(datetime.datetime.utcfromtimestamp(time.time()).timetuple()))
         sample_bytes = str(len(query_data))
 
-        string_to_sign = http_method+"\n"+http_url_file+"\n"+access_key+"\n"+data_type+"\n"+signature_version+"\n"+str(timestamp)
-        sign = base64.b64encode(hmac.new(str(access_secret), str(string_to_sign), digestmod=hashlib.sha1).digest())
+        string_to_sign = http_method + '\n' + http_url_file + '\n' + access_key + '\n' + data_type + '\n' + signature_version + '\n' + str(timestamp)
+        hmac_res = hmac.new(access_secret.encode('ascii'), string_to_sign.encode('ascii'), digestmod=hashlib.sha1).digest()
+        sign = base64.b64encode(hmac_res).decode('ascii')
 
-        fields = {'access_key':access_key,
-                  'stream_id':stream_id,
-                  'sample_bytes':sample_bytes,
-                  'timestamp':str(timestamp),
-                  'signature':sign,
-                  'data_type':data_type,
-                  "signature_version":signature_version}
+        fields = {
+            'access_key': access_key,
+            'stream_id': stream_id,
+            'sample_bytes': sample_bytes,
+            'timestamp': str(timestamp),
+            'signature': sign,
+            'data_type': data_type,
+            'signature_version': signature_version
+        }
 
         server_url = 'http://' + host + http_url_file
-        res = self.post_multipart(server_url, fields, {"sample" : query_data}, timeout)
+        res = self.post_multipart(server_url, fields, {'sample' : query_data}, timeout)
         return res
 
     def recognize(self, host, wav_buf, query_type, stream_id, access_key, access_secret):

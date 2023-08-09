@@ -1,12 +1,6 @@
-#!/usr/bin/env python
-#-*- coding:utf-8 -*-
-
 import sys
-import MySQLdb
+import pymysql
 import traceback
-
-reload(sys)
-sys.setdefaultencoding("utf8")
 
 class MysqlManager:
 
@@ -16,45 +10,44 @@ class MysqlManager:
         self.user = user
         self.passwd = passwd
         self.dbname = dbname
-        self.conn = MySQLdb.connect(host=host, user=user,
+        self.conn = pymysql.connect(host=host, user=user,
                                     passwd=passwd, db=dbname,
-                                    port=port, charset="utf8")
-        #self.conn = MySQLdb.connect(host, port, user, passwd, dbname, charset="utf8")
+                                    port=port, charset='utf8')
         self.curs = self.conn.cursor()
 
     def reconnect(self):
-        self.conn = MySQLdb.connect(host=self.host, port=self.port, user=self.user,
-                passwd=self.passwd, db=self.dbname, charset="utf8")
+        self.conn = pymysql.connect(host=self.host, port=self.port, user=self.user,
+                passwd=self.passwd, db=self.dbname, charset='utf8')
         self.curs = self.conn.cursor()
 
     def commit(self):
         try:
             self.conn.commit();
-        except (AttributeError, MySQLdb.Error):
+        except (AttributeError, pymysql.Error):
             self.reconnect()
             try:
                 self.conn.commit();
-            except MySQLdb.Error:
+            except pymysql.Error:
                 raise
 
     def execute(self, sql, params=None):
         if params:
             try:
                 self.curs.execute(sql, params)
-            except (AttributeError, MySQLdb.Error):
+            except (AttributeError, pymysql.Error):
                 self.reconnect()
                 try:
                     self.curs.execute(sql, params)
-                except MySQLdb.Error:
+                except pymysql.Error:
                     raise
         else:
             try:
                 self.curs.execute(sql)
-            except (AttributeError, MySQLdb.Error):
+            except (AttributeError, pymysql.Error):
                 self.reconnect()
                 try:
                     self.curs.execute(sql)
-                except MySQLdb.Error:
+                except pymysql.Error:
                     raise
         return self.curs
 
@@ -62,10 +55,18 @@ class MysqlManager:
         if params:
             try:
                 self.curs.executemany(sql, params)
-            except (AttributeError, MySQLdb.Error):
+            except (AttributeError, pymysql.Error):
                 self.reconnect()
                 try:
                     self.curs.executemany(sql, params)
-                except MySQLdb.Error:
+                except pymysql.Error:
                     raise
         return self.curs
+
+    def insert_results(self, params):
+        try:
+            sql = '''insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s) on duplicate key update id=LAST_INSERT_ID(id)'''
+            self.curs.execute(sql, params)
+            self.conn.commit()
+        except Exception as e:
+            traceback.print_exc()

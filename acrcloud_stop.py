@@ -8,7 +8,7 @@ from acrcloud_config import config
 
 class MonitorClient:
     def __init__(self):
-        self.mc = tools_memcache.Client(["127.0.0.1:{0}".format(config["server"]["port"])])
+        self.mc = tools_memcache.Client(['127.0.0.1:{0}'.format(config['server']['port'])])
 
     def refresh(self):
         print self.mc.set('refresh', '')
@@ -29,7 +29,7 @@ class MonitorClient:
 
     def start(self):
         while 1:
-            cmd = raw_input("(1.refresh, 2.restart, 3.state, 4.pause, 5.stop): ")
+            cmd = raw_input('(1.refresh, 2.restart, 3.state, 4.pause, 5.stop): ')
             if cmd == '1':
                 self.refresh()
             elif cmd == '2':

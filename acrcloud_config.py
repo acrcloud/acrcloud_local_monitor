@@ -13,14 +13,15 @@ config = {
     "stream_ids":[],
     "recognize": {},
     "database":{
-        'type': 'mysql', # mysql or psql, if psql is selected, make sure to install the python package 'psycopg2'
+        'type': 'sqlite3', # mysql, psql or sqlite3, if psql is selected, make sure to install the python package 'psycopg2'
         #Local Database Config
         "enabled": 1, #1-enabled(default), 0-disabled
         "host":"127.0.0.1",
-        "port":3306, # psql port: 5432
+        "port":3306,
         "user":"root",
         "passwd":"XXXXXXXXX",
         "db":"monitor_result",
+        "sqlite3_db": "./sqlite3_db/results.db"
     },
     "log":{
         #Local Monitor Server Log Config
