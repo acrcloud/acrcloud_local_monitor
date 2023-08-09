@@ -46,7 +46,6 @@ Local **Bradcast Monitoring** System is used to monitor live radio streams on yo
 
 1. Install Docker
 
-    * If you are using Windows: Download [Docker Desktop for Windows](https://download.docker.com/win/stable/Docker%20for%20Windows%20Installer.exe) and install.
     * If you are using MacOs: Download [Docker Desktop for Mac](https://download.docker.com/mac/stable/Docker.dmg) and install.
     * If you are using Linux: Open the Terminal and input `bash <(curl -s https://get.docker.com/)`
 
