@@ -26,17 +26,5 @@ config = {
     "log":{
         #Local Monitor Server Log Config
         "dir":"./radioLog",
-    },
-    "record":{
-        #if record=3, Monitor Server will record the recognize audio file.
-        #if record=0, Monitor Server will not record audio file.
-        "record":0,
-        "record_before":5, #seconds
-        "record_after":5,  #seconds
-        #if record_save_days = N and record_save_days>0, Monitor Server will keep current N days record files,
-        #the record files of N days will be auto deleted.
-        #if record_save_days=0, it will keep all record files all time.
-        "record_save_days": 5, #default keep 5 days record files
-        "record_dir":"./record_file"
     }
 }

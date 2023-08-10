@@ -18,8 +18,12 @@ class RecordWorker:
 
     def __init__(self, config, workQueue):
         self.config = config
-        self.record_keep_days = config['record']['record_save_days']
-        self.record_dir = config['record']['record_dir']
+        if 'record' in config:
+            self.record_keep_days = config['record'].get('record_save_days', 5)
+            self.record_dir = config['record'].get('record_dir', './record_files')
+        else:
+            self.record_keep_days = 5
+            self.record_dir = './record_files'
         self.logdir = config['log']['dir']
         self.workQueue = workQueue
         self.recordDict = {} # key: stream_id, value: [(timestamp, record_before, record_after, now_buf, before_buf), ...]
