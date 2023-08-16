@@ -72,6 +72,7 @@ class AcrcloudMana:
             return None
 
     def recData(self, recdata):
+        recdata = recdata.decode()
         datainfo = recdata[:-2].split('\r\n', 1)
         if len(datainfo) == 2:
             cmd_info, data_block = datainfo

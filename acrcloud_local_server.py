@@ -41,12 +41,12 @@ class Server(Protocol):
 
     def dataReceived(self, data):
         ret = self.mana.recData(data)
-        self.sendData(ret)
+        self.sendData(ret.encode())
         if ret[:5] == 'VALUE':
-            self.sendData('END')
+            self.sendData(b'END')
 
     def sendData(self, data):
-        self.transport.write(data + '\r\n')
+        self.transport.write(data + b'\r\n')
 
         
 class ServerFactory(ServerFactory):

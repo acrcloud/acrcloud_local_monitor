@@ -11,15 +11,15 @@ class MonitorClient:
         self.mc = tools_memcache.Client(["127.0.0.1:{0}".format(config["server"]["port"])])
 
     def refresh(self):
-        print self.mc.set('refresh', '')
+        print (self.mc.set(b'refresh', b''))
 
     def stop(self):
-        print self.mc.set('stop', '')
+        print (self.mc.set(b'stop', b''))
 
     def state(self, id):
-        state = self.mc.get('state:'+str(id))
+        state = self.mc.get(('state:'+str(id)).encode())
         #jsonstate = json.loads(state)
-        print state
+        print (state)
 
     def start(self):
         while 1:
