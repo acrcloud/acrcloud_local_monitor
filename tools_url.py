@@ -79,10 +79,13 @@ class Tools_Url:
             traceback.print_exc()
         return res
 
-    def getContentType(self, url, timeout=20):
+    def getContentType(self, url, read_size=10):
         try:
             res = ''
-            r = requests.get(url, timeout=timeout)
+            r = requests.get(url, stream=True)
+            for b in r.iter_content(chunk_size=int(read_size)):
+                res = b.decode()
+                break
             if r and 'Content-Type' in r.headers:
                 res = r.headers['Content-Type']
         except Exception as e:
