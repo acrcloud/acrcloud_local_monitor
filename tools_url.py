@@ -84,7 +84,7 @@ class Tools_Url:
             res = ''
             r = requests.get(url, stream=True)
             for b in r.iter_content(chunk_size=int(read_size)):
-                res = b.decode()
+                pass
                 break
             if r and 'Content-Type' in r.headers:
                 res = r.headers['Content-Type']
