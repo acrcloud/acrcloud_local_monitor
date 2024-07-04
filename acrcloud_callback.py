@@ -166,7 +166,7 @@ class PostManager:
 
     def get_outside_ip(self):
         try:
-            return requests.get('http://ip.42.pl/raw', timeout=15).text
+            return requests.get('https://checkip.amazonaws.com', timeout=15).text
         except Exception as e:
             self.dlog.logger.error('Error@get_outside_ip', exc_info=True)
         return 'unknow'
