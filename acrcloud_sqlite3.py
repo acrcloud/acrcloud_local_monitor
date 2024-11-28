@@ -58,12 +58,9 @@ class Sqlite3Manager:
             traceback.print_exc()
 
     def insert_results(self, params):
-        try:
-            sql = '''insert into result_info(access_key, stream_url,stream_id, result, timestamp, catchDate) values(?,?,?,?,?,?)'''
-            self.curs.execute(sql, params)
-            self.conn.commit()
-        except Exception as e:
-            traceback.print_exc()
+        sql = '''insert into result_info(access_key, stream_url,stream_id, result, timestamp, catchDate) values(?,?,?,?,?,?)'''
+        self.curs.execute(sql, params)
+        self.conn.commit()
 
 if __name__ == '__main__':
     db_fpath = './test.db' 

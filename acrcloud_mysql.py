@@ -65,10 +65,7 @@ class MysqlManager:
         return self.curs
 
     def insert_results(self, params):
-        try:
-            self.conn.ping(reconnect=True)
-            sql = '''insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s) on duplicate key update id=LAST_INSERT_ID(id)'''
-            self.curs.execute(sql, params)
-            self.conn.commit()
-        except Exception as e:
-            traceback.print_exc()
+        self.conn.ping(reconnect=True)
+        sql = '''insert into result_info (access_key, stream_url, stream_id, result, timestamp, catchDate) values (%s, %s, %s, %s, %s, %s) on duplicate key update id=LAST_INSERT_ID(id)'''
+        self.curs.execute(sql, params)
+        self.conn.commit()
