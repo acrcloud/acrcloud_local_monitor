@@ -94,6 +94,9 @@ class Worker_DownloadStream(threading.Thread):
         if stream_spare_urls2:
             self._url_map['url_list'].extend(stream_spare_urls2)
 
+        if not stream_url and len(self._url_map['url_list']) > 0:
+            info['stream_url'] = self._url_map['url_list'][0]
+
         self._new_refresh = 2
 
         tmp_url_list = self._url_map['url_list']
