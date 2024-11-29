@@ -86,10 +86,13 @@ class Worker_DownloadStream(threading.Thread):
         stream_url = str(info.get('stream_url', '')).strip()
         self._stream_url_now = stream_url
         stream_spare_urls = [url.strip() for url in info.get('stream_spare_urls', []) if url.strip()]
+        stream_spare_urls2 = [url.strip() for url in info.get('stream_urls', []) if url.strip()]
         if stream_url:
             self._url_map['url_list'].append(stream_url)
         if stream_spare_urls:
             self._url_map['url_list'].extend(stream_spare_urls)
+        if stream_spare_urls2:
+            self._url_map['url_list'].extend(stream_spare_urls2)
 
         self._new_refresh = 2
 
