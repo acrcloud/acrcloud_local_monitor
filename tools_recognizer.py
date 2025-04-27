@@ -110,7 +110,7 @@ class acrcloud_recognize:
         return ''
 
     def gen_fp(self, buf, rate=0):
-        return acrcloud_stream_decode.create_fingerprint(buf, False, 300, 0.3)
+        return acrcloud_stream_decode.create_fingerprint(buf, False, 300, 0.1)
 
     def do_recogize(self, host, query_data, query_type, stream_id, access_key, access_secret, timeout=10):
         http_method = 'POST'
